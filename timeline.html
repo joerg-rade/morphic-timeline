@@ -1,0 +1,171 @@
+﻿<!DOCTYPE html>
+<html>
+	<head>
+		<title>Morphic Timeline</title>
+		<script type="text/javascript" src="morphic.js"></script>
+		<script type="text/javascript" src="widgets.js"></script>
+		<script type="text/javascript" src="timeline.js"></script>
+		<script type="text/javascript">		
+		//TODOs
+		// place checkboxes above graph -> AlignmentMorph (widget.js)
+		// how can the world sale to 100%, take the available area?
+		// how can timelineBars have labels?
+		//
+		// checkboxes flat instead of 3d
+		// use passed in links / hours instead of y values for popup's
+		// scale x-axis according to passed in Time scale, days, months, etc.
+		// have h-scrollbar as birds eye view - assign thumbnail of complete graph
+		// avoid v-scrollbar and use default 'scale'
+		//API vars
+		// style analogous to css of including page
+		//    scrollBarSize: 12,
+		// ctx.font = '1px serif';
+			//var caption = 'Releases';
+			var caption = null;
+			var fontSize = 15;
+			var fontStyle = 'sans-serif';
+			var backColor = new Color(255, 255, 255); //white
+			var textColor = new Color(0, 0, 0); //black;
+			var red = new Color(255, 0, 0); //red - for test only
+			var enableResize = false;
+			var width = 800;
+			var height = 600;
+			var inset = 0;
+			var scrollBarHeight = 40; // horizontal
+			var lineWidth = 15; // timelineBar width
+			
+			var data = '{"events" : [' +
+'{ "title":"Vacation", "startDate":"2016-07-22", "endDate":"2016-08-15", "color":"#FFFF00"  }' +
+',{ "title":"Release 2.11", "startDate":"2016-02-15", "endDate":"2016-08-03", "color":"#6A5ACD" }' +
+',{ "title":"GoLive", "startDate":"2016-08-03", "endDate":"2016-08-04", "color":"#FF0000", "parent":"Release 2.11" }' +
+',{ "title":"Release 3.3", "startDate":"2016-04-11", "endDate":"2016-09-05", "color":"#87CEEB" }' +
+',{ "title":"Release 3.4", "startDate":"2016-07-01", "endDate":"2016-12-31", "color":"#87CEEB" }' +
+']}';
+			
+			var rawData = JSON.parse(data);
+			var eventList = [];
+			var dateList = [];
+			// turn Strings into Objects and split into events and dates
+			var e;
+			var rgb;
+			for (i = 0; i < rawData.events.length; i++) {
+				e = rawData.events[i];
+				e.startDate = new Date(e.startDate);
+				e.endDate = new Date(e.endDate);
+				if (e.color !== null) {
+					rgb = hexToRgb(e.color);
+					e.color = new Color(rgb.r, rgb.g, rgb.b);
+				}
+				if (e.parent == null) {
+					eventList.push(e);
+				} else {
+					dateList.push(e);
+				}
+				window.alert(eventList);
+				window.alert(dateList);
+			}
+		
+			eventList.sort(function(a, b){return a.endDate > b.endDate});
+			var omega = eventList[eventList.length - 1].endDate;
+			
+			var startList = eventList.slice();
+			startList.sort(function(a, b){return a.startDate > b.startDate});
+			var alpha = startList[0].startDate;
+			
+			var scaleLabels = [];			
+			var scaleData = [];			
+			var d = new Date(alpha);
+			var label;
+			while (d < omega) {
+				scaleData.push(d);
+				label = d.toDateString().split(" ");
+				scaleLabels.push(label[1] + "\n" + label[2]);
+				d.setDate(d.getDate() + 1);
+			};
+						
+			function daysBetween(date1, date2) {
+				var one_day = 1000 * 60 * 60 * 24; // 1 day in milliseconds
+				var date1_ms = date1.getTime(); // as milliseconds
+				var date2_ms = date2.getTime();
+				var diff_ms = date2_ms - date1_ms;
+				var days = Math.round(diff_ms/one_day); 
+				return days;
+			}
+
+			caption = "Number of Days spanned: " + daysBetween(alpha,omega);
+			//var dateArray = caption.split(); 
+			
+			function line(index) {
+				var lineArray = [];
+				var d = new Date(alpha);
+				var noPos;
+				while (d < eventList[index].startDate) {
+					lineArray.push(noPos);
+					d.setDate(d.getDate() + 1);
+				}
+				var yPos = 180 - (index * 20);
+				while (d < eventList[index].endDate) {
+					lineArray.push(yPos);
+					d.setDate(d.getDate() + 1);
+				}
+//				if (index == 1)	{
+//					window.alert(lineArray);
+//				}
+				return lineArray;
+			}
+						
+			function hexToRgb(hex) {
+				var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+				return result ? {
+					r: parseInt(result[1], 16),
+					g: parseInt(result[2], 16),
+					b: parseInt(result[3], 16)
+				} : null;
+			}
+			
+			function isPointInTime(lineArray) {
+				var temp = lineArray.slice();
+				var none;
+				removeElement(temp, none);
+				return (temp.length == 1);				
+			}
+			
+			function removeElement(arr) {
+				var what, a = arguments, L = a.length, ax;
+				while (L > 1 && arr.length) {
+					what = a[--L];
+					while ((ax= arr.indexOf(what)) !== -1) {
+						arr.splice(ax, 1);
+					}
+				}
+				return arr;
+			}
+			
+//			isPointInTime(line(1));
+//			isPointInTime(line(2));
+///////////////////////
+			var	world, timeline; 
+
+			window.onload = function () {
+				world = new WorldMorph(document.getElementById('world'));
+				world.setColor(backColor);
+				timeline = new TimelineMorph();
+				timeline.useFillPage = true;
+				timeline.setPosition(new Point(0, 0));
+				world.add(timeline);
+				setInterval(loop, 1);
+			};
+
+			function loop() {
+				world.doOneCycle();
+			}
+			
+		</script>
+	</head>
+
+	<body>
+		<canvas id="world" tabindex="1" width="100%" height="100%" style="position: absolute;">
+			<p>Your browser doesn't support canvas.</p>
+		</canvas>
+	</body>
+</html>
