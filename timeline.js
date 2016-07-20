@@ -75,12 +75,8 @@ WorldMorph.prototype.customMorphs = function () {
 };
 
 // GridMorph ///////////////////////////////////////////////////////////
-
 // I am a chart's coordinate system
-
 // GridMorph inherits from Morph:
-
-
 GridMorph.prototype = new Morph();
 GridMorph.prototype.constructor = GridMorph;
 GridMorph.uber = Morph.prototype;
@@ -93,8 +89,7 @@ function GridMorph() {
 
 GridMorph.prototype.init = function (x, y, xLines, yLines) {
 	// additional attributes:
-	// TODO API (extract from css of embedder)
-	this.backgroundColor = backColor;
+	this.backgroundColor = api_backColor;
 
 	//API xUnits determines how many days etc. are displayed
 	this.xUnits = x || (x === 0 ? 0 : 320);// TODO use spannedDays
@@ -105,7 +100,7 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 
 	this.axesWidth = 1;
 	this.lineWidth = 0.2;
-	this.fontSize = fontSize;
+	this.fontSize = api_fontSize;
 
 	this.isFilled = true;
 	// API x-axis labels
@@ -128,7 +123,7 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 
 	// override inherited attributes:
 	this.noticesTransparentClick = true;
-	this.color = textColor;
+	this.color = api_textColor;
 //	vertical lines for times
     this.color.a = 0.05;
 	this.createLabels();
@@ -227,21 +222,19 @@ GridMorph.prototype.createLines = function () {
 };
 
 GridMorph.prototype.createLabels = function () {
-	var	myself = this, lm; //, i = 0; JM: i can be removed
+	var	myself = this, lm; //, i = 0; JM: var 'i' is unused
 
-	this.columns.forEach(function (col) {
+	this.columns.forEach(function (col) {s
 		lm = new TextMorph(
 			col,
-			myself.fontSize,
-			//TODO API use var from *.html
-			'sans-serif',
+			myself.api_fontSize,
+			myself.api_fontStyle,
 			false,
 			false,
 			'center'
 		);
 		lm.isXLabel = true;
-		// API x-axis label 
-		lm.setColor(textColor);
+		lm.setColor(api_textColor);
 		myself.add(lm);
 //		i += 1;
 	});
@@ -265,7 +258,7 @@ GridMorph.prototype.mouseLeave = function () {
 };
 
 // LineMorph ///////////////////////////////////////////////////////////
-// I am a line chart's line
+// I am a timelines horizontal bar and am responsible for checkboxes as well as value hoovers
 // LineMorph inherits from Morph:
 LineMorph.prototype = new Morph();
 LineMorph.prototype.constructor = LineMorph;
@@ -297,8 +290,7 @@ LineMorph.prototype.init = function (label, x, y, values, color, isFilled) {
 	LineMorph.uber.init.call(this);
 
 	// override inherited attributes:
-	// API backColor
-	this.color = color || backColor;
+	this.color = color || api_backColor;
 };
 
 LineMorph.prototype.lineY = function (value) {
@@ -317,9 +309,6 @@ LineMorph.prototype.valueAt = function (x) {
 		((x - left) / (right - left)
 			* (this.values[idx + 1] - this.values[idx]));
 };
-/*LineMorph.prototype.valueAt = function (x) {
-	return scaleData[x].toStringDate();
-};*/
 
 // Rider = value hoover
 LineMorph.prototype.rider = function () {
@@ -337,8 +326,7 @@ LineMorph.prototype.rider = function () {
         new Point(-1, -1),
         this.color.darker(50)
     );
-	//TODO API backColor - no effect?
-    lbl.setColor(backColor);
+    lbl.setColor(api_textColor);
 
     rider = new BoxMorph(lbl.height() / 2);
     rider.border = 1;
@@ -357,7 +345,7 @@ LineMorph.prototype.drawNew = function () {
 	this.image = newCanvas(this.extent());
 	context = this.image.getContext('2d');
 	context.strokeStyle = this.color.toString();
-	context.lineWidth = lineWidth;
+	context.lineWidth = api_timelineHeight;
 	context.lineJoin = 'round';
 
 	this.linePath(context);
@@ -442,11 +430,9 @@ LineMorph.prototype.toggleFading = function () {
 };
 
 // TimelineMorph //////////////////////////////////////////////////////////
-
-// TimelineMorph inherits from BoxMorph:
-
+// TimelineMorph inherits from BoxMorph: // AlignmentMorph
 TimelineMorph.prototype = new BoxMorph();
-TimelineMorph.prototype.constructor = TimelineMorph;
+TimelineMorph.prototype.constructor = BoxMorph;
 TimelineMorph.uber = BoxMorph.prototype;
 
 // TimelineMorph instance creation:
@@ -456,10 +442,7 @@ function TimelineMorph() {
 }
 
 TimelineMorph.prototype.init = function () {
-	//API caption
-	this.label = caption;
-	//TODO API
-	this.padding = 0;
+	this.padding = api_padding;
 
 	TimelineMorph.uber.init.call(
 		this,
@@ -467,8 +450,7 @@ TimelineMorph.prototype.init = function () {
 		1, // 1.000001, // shadow bug in Chrome,
 		new Color(20, 20, 20)
 	);
-	//API backColor
-	this.color = backColor;
+	this.color = api_backColor;
 	// API? edge=10 does some rounding
 	this.edge = 0;
 	this.contents = new GridMorph();
@@ -478,10 +460,8 @@ TimelineMorph.prototype.init = function () {
 	this.legend = null;
 	this.isDraggable = false;
 	this.buildParts();
-	//API width / height
-	this.setExtent(new Point(width, height));
-	// API lower right corner resize tool
-	if (enableResize) {
+	this.setExtent(new Point(api_width, api_height));
+	if (api_enableResize) {
 		this.handle = new HandleMorph(this, 275, 225, 4, 4);
 	}
 };
@@ -489,6 +469,7 @@ TimelineMorph.prototype.init = function () {
 TimelineMorph.prototype.buildParts = function () {
 	var grid = this.contents, i, lm, last, myself = this;
 
+// Part 1 / top
 	this.labelMorph = new StringMorph(
 		this.label,
 		grid.fontSize * 1.5,
@@ -496,16 +477,13 @@ TimelineMorph.prototype.buildParts = function () {
 		true,
 		false
 	);
-	this.labelMorph.setColor(textColor);
-	//TODO only add label when notEmpty
-	if (caption != null) {
-		this.add(this.labelMorph);
-	}
-	
+	this.labelMorph.setColor(api_textColor);
+
+// Part 5 / bottom	
 	this.legend = new Morph();
-	//API backColor 
-	this.legend.color = backColor;
+	this.legend.color = api_backColor;
 	this.add(this.legend);
+// Part 2 / center/data
 	this.contents.children.forEach(function (c) {
 		if (c instanceof LineMorph) {
 			lm = new ToggleMorph(
@@ -521,10 +499,9 @@ TimelineMorph.prototype.buildParts = function () {
 			lm.highlightColor = c.color.lighter();
 			lm.pressColor = c.color.darker();
 			lm.drawNew();
-	        //API textColor 
-			lm.label.setColor(textColor);
+			lm.label.setColor(api_textColor);
 			// API
-			lm.label.setFontSize(fontSize);
+			lm.label.setFontSize(api_fontSize);
 			myself.legend.add(lm);
 			if (last) {
 				lm.setPosition(last.fullBounds().topRight().add(
@@ -539,12 +516,16 @@ TimelineMorph.prototype.buildParts = function () {
 		}
 	});
 
-	//API thickness of the H-Scrollbar 
-	this.frame = new ScrollFrameMorph(this.contents, scrollBarHeight);
+	//Part 3 H-Scrollbar 
+	this.frame = new ScrollFrameMorph(this.contents, api_scrollBarHeight);
 	this.frame.hBar.alpha = 0.1;
-	this.frame.hBar.color = red; //backColor
-	this.frame.hBar.button.color = red; //backColor
+	this.frame.hBar.color = api_red; 
+	this.frame.hBar.button.color = api_red; 
 	this.frame.hBar.button.alpha = 0.3;
+	//???
+	//alert(this.frame.hBar.edge());
+	//this.frame.hBar.boundingBox().round().corner(new Point(0,0));
+	//alert(this.frame.hBar.boundingBox().round().corner);
 	//this.frame.alpha = 100;
 	this.frame.isDraggable = false;
 	this.frame.acceptsDrops = false;
@@ -567,7 +548,6 @@ TimelineMorph.prototype.buildParts = function () {
 };
 
 // TimelineMorph layout:
-
 TimelineMorph.prototype.fixLayout = function () {
 	var grid = this.contents, inset, i, y, myself = this;
 
@@ -596,11 +576,12 @@ TimelineMorph.prototype.fixLayout = function () {
 			this.left() /*+ inset*/,
 			this.labelMorph.bottom() + this.border + this.padding
 		));
+//alert(this.labelMorph.bottom());
 		this.frame.bounds.corner = this.legend.topRight().subtract(new Point(
 			18 + this.padding,
 			this.padding
 		));
-// XXX  use grid layout or something like this
+// XXX  AlignmentMorph or something like this
 //this.frame.bounds.corner = new Point(width, height);
 		this.frame.drawNew();
 		this.contents.setExtent(new Point(
@@ -671,8 +652,6 @@ TimelineMorph.prototype.drawGradient = function () {
 		this.border
 	);
 	context.closePath();
-	//FIXME this colors the background
-//	context.fill();
 	if (this.border > 0) {
 		//TODO API gradient.color
 		gradient = context.createLinearGradient(255, 255, 255, this.height());
