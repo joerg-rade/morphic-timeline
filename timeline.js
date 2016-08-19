@@ -108,14 +108,11 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 	
 	this.columnInterval = 1;
 
-	//API data 
-	this.colors = [];
-	this.rows = [];
+	//API data
+	//TODO: better use object encapsulating values instead of group of arrays
 	this.lines = [];
 	for (i = 0; i < eventList.length; i++) {
-		this.colors.push(eventList[i].color);
-		this.rows.push(eventList[i].title);
-		this.lines.push(line(i));
+		this.lines.push(line(eventList[i], i));
 	}
 
 	// initialize inherited attributes:
@@ -208,11 +205,11 @@ GridMorph.prototype.createLines = function () {
 	var myself = this, lm, i = 0;
 	this.lines.forEach(function (line) {
 		lm = new LineMorph(
-			myself.rows[i],
+			eventList[i].title, // tl data array
 			myself.xUnits,
 			myself.yUnits,
 			line,
-			myself.colors[i],
+			eventList[i].color,
 			this.isFilled
 		);
 		lm.setPosition(myself.position().copy());
@@ -222,9 +219,9 @@ GridMorph.prototype.createLines = function () {
 };
 
 GridMorph.prototype.createLabels = function () {
-	var	myself = this, lm; //, i = 0; JM: var 'i' is unused
+	var	myself = this, lm; 
 
-	this.columns.forEach(function (col) {s
+	this.columns.forEach(function (col) {
 		lm = new TextMorph(
 			col,
 			myself.api_fontSize,
@@ -236,7 +233,6 @@ GridMorph.prototype.createLabels = function () {
 		lm.isXLabel = true;
 		lm.setColor(api_textColor);
 		myself.add(lm);
-//		i += 1;
 	});
 };
 
@@ -258,7 +254,7 @@ GridMorph.prototype.mouseLeave = function () {
 };
 
 // LineMorph ///////////////////////////////////////////////////////////
-// I am a timelines horizontal bar and am responsible for checkboxes as well as value hoovers
+// I am a timeline's horizontal bar and am responsible for checkboxes as well as value hoovers
 // LineMorph inherits from Morph:
 LineMorph.prototype = new Morph();
 LineMorph.prototype.constructor = LineMorph;
@@ -280,11 +276,10 @@ LineMorph.prototype.init = function (label, x, y, values, color, isFilled) {
 	this.values = values || [];
 	this.isFilled = isFilled || false;
 
-	//API width of Lines
-	this.lineWidth = 6;
+	//this.lineWidth = api_barHeight;
 
-	rider = new BoxMorph(this.lineWidth);
-	this.add(rider);
+//	rider = new BoxMorph(this.lineWidth);
+//	this.add(rider);
 
 	// initialize inherited attributes:
 	LineMorph.uber.init.call(this);
@@ -316,6 +311,7 @@ LineMorph.prototype.rider = function () {
 	if (this.children[0]) {
 		return this.children[0];
     }
+	// setting constant text here has no effect
     lbl = new StringMorph(
         this.yUnits,
         10,
@@ -351,14 +347,7 @@ LineMorph.prototype.drawNew = function () {
 	this.linePath(context);
 	context.stroke();
 
-	if (this.isFilled) {
-		this.fill(context);
-	}
-
 	rider = this.rider();
-	// No effect?
-	//rider.borderColor = this.color.darker(40);
-	//rider.color = this.color.lighter(30);
 	rider.drawNew();
 	rider.hide();
 };
@@ -366,6 +355,7 @@ LineMorph.prototype.drawNew = function () {
 LineMorph.prototype.linePath = function (context) {
 	var i, x, y;
 
+	var drawLine = hasDuration(this.values);
 	for (i = 0; i < this.values.length; i += 1) {
 		if (this.values[0] !== null) {
 			x = i * (this.width() / this.xUnits);
@@ -376,11 +366,17 @@ LineMorph.prototype.linePath = function (context) {
 			} else {
 				context.lineTo(x, y);
 			}
+			if (! drawLine) {
+				if  (!isNaN(y)) drawMilestone();
+			}
 		}
 	}
-	if (isPointInTime(this.values)) {
-		var r = 10;
-		context.lineWidth = 3;
+	
+	/** inner - only called by enclosing function */
+	/** draw a 'salino' for events without duration */
+	function drawMilestone() {
+		var r = api_dateHeight;
+		context.lineWidth = api_dateLineWidth;
 		context.moveTo(x - r, y);
 		context.lineTo(x, y + r);
 		context.lineTo(x + r, y);
@@ -399,7 +395,7 @@ LineMorph.prototype.startStepping = function () {
 	this.rider().show();
 	this.step = function () {
 		var	pos = myself.world().hand.position(),
-			value = this.valueAt(pos.x - this.left()),
+			value = this.valueAt(pos.y - this.left()),
 			rider = this.rider();
 		rider.label().setText(Math.round(value));
 		rider.label().setCenter(rider.center());
@@ -522,11 +518,6 @@ TimelineMorph.prototype.buildParts = function () {
 	this.frame.hBar.color = api_red; 
 	this.frame.hBar.button.color = api_red; 
 	this.frame.hBar.button.alpha = 0.3;
-	//???
-	//alert(this.frame.hBar.edge());
-	//this.frame.hBar.boundingBox().round().corner(new Point(0,0));
-	//alert(this.frame.hBar.boundingBox().round().corner);
-	//this.frame.alpha = 100;
 	this.frame.isDraggable = false;
 	this.frame.acceptsDrops = false;
 	this.frame.scrollY = function () {};

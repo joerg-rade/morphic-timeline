@@ -1,10 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 	<head>
 		<title>Morphic Timeline</title>
 		<script type="text/javascript" src="morphic.js"></script>
 		<script type="text/javascript" src="widgets.js"></script>
 		<script type="text/javascript" src="timeline.js"></script>
+		<script type="text/javascript" src="timeline_setup.js"></script>
 		<script type="text/javascript">		
 		//TODOs
 		// place checkboxes above graph -> AlignmentMorph (widget.js)
@@ -34,162 +35,31 @@
 			var api_height = 600;
 			var api_scrollBarHeight = 40; // horizontal
 			var api_timelineHeight = 15; // Bar height
+			var api_dateHeight = 10; // extent of the date marker
+			var api_dateLineWidth = 1; // border of the date marker
 			var api_padding = 0;
 			
 			/** (sample) event data */
+			// minimum duration = 1 day for eventWOduration ... FIXME
 			var data = '{"events" : [' +
 '{ "title":"Vacation", "startDate":"2016-07-22", "endDate":"2016-08-15", "color":"#FFFF00"  }' +
 ',{ "title":"Release 2.11", "startDate":"2016-02-15", "endDate":"2016-08-17", "color":"#6A5ACD" }' +
-',{ "title":"GoLive", "startDate":"2016-08-17", "endDate":"2016-08-04", "color":"#FF0000", "parent":"Release 2.11" }' +
+',{ "title":"GoLive", "startDate":"2016-08-17", "endDate":"2016-08-18", "color":"#FF0000", "parent":"Release 2.11" }' +
 ',{ "title":"Release 3.3", "startDate":"2016-04-11", "endDate":"2016-09-05", "color":"#87CEEB" }' +
 ',{ "title":"Release 3.4", "startDate":"2016-07-01", "endDate":"2016-12-31", "color":"#87CEEB" }' +
 ']}';
 			
 			/** global vars */
 			var eventList = [];
-			var dateList = [];
-			initData();
-//alert(eventList);
 			var scaleLabels = [];			
 			var scaleData = [];	
-			initScale();
-			
-			/**
-			 * Turn Strings into Objects (date, color, parent).
-			 * Split into events (having a duration) and dates (no duration). 
-			 * Intended effect: eventList and dateList are filled.
-			 */
-			function initData() {
-				var e;
-				var rgb;
-				var rawData = JSON.parse(data);
-				for (i = 0; i < rawData.events.length; i++) {
-					e = rawData.events[i];
-					e.startDate = new Date(e.startDate);
-					e.endDate = new Date(e.endDate);
-					if (e.color !== null) {
-						rgb = hexToRgb(e.color);
-						e.color = new Color(rgb.r, rgb.g, rgb.b);
-					}
-					if (e.parent == null) {
-						eventList.push(e);
-					} else { 
-						e.parent = findParentFor(e);
-						// setup bidir rel and do parent.addChild(e) ?
-						dateList.push(e);
-					}
-				}
-				/** inner fun - only called by enclosing function */
-				function findParentFor(childEvent) {
-					var key = childEvent.parent;
-					for (p = 0; p < eventList.length; p++) {
-						if (key == eventList[p].label) {
-							// first match wins
-							return p;
-						}
-					}
-					return null;
-				}
-				/** inner fun - only called by enclosing function */
-				function hexToRgb(hex) {
-					var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-					return result ? {
-						r: parseInt(result[1], 16),
-						g: parseInt(result[2], 16),
-						b: parseInt(result[3], 16)
-					} : null;
-				}
-			}
-			
-			/** 
-			 * Sort eventList by endDate.
-			 * @returns last {Date}
-			 */
-			function omega() {
-				eventList.sort(function(a, b){return a.endDate > b.endDate});
-				var omega = eventList[eventList.length - 1].endDate;
-				return omega;
-			}
-			/** 
-			 * Sort (copy of) eventList by startDate.
-			 * @returns first {Date}
-			 */
-			function alpha() {
-				var startList = eventList.slice();
-				startList.sort(function(a, b){return a.startDate > b.startDate});
-				var alpha = startList[0].startDate;
-				return alpha;
-			}
-			
-			/**
-			 * Initializes scale label and data, starting with earliest start date and anding at latest end date.
-			 */
-			function initScale() {			
-				var d = new Date(alpha());
-				var label;
-				while (d < omega()) {
-					scaleData.push(d);
-					label = d.toDateString().split(" ");
-					scaleLabels.push(label[1] + "\n" + label[2]);
-					d.setDate(d.getDate() + 1);
-				};
-			}
-						
-			function daysBetween(date1, date2) {
-				var one_day = 1000 * 60 * 60 * 24; // 1 day in milliseconds
-				var date1_ms = date1.getTime(); // as milliseconds
-				var date2_ms = date2.getTime();
-				var diff_ms = date2_ms - date1_ms;
-				var days = Math.round(diff_ms/one_day); 
-				return days;
-			}
-			
-			function line(index) {
-				var lineArray = [];
-				var empty;
-				var event = eventList[index];
-				var d = new Date(alpha());
-				while (d < event.startDate) {
-					lineArray.push(empty);
-					d.setDate(d.getDate() + 1);
-				}
-				var yPos = 180 - (index * 20);
-				while (d < event.endDate) {
-					lineArray.push(yPos);
-					d.setDate(d.getDate() + 1);
-				}
-				return lineArray;
-			}
-									
-			/**
-			 * @param lineArray data to be plotted for timeline or date
-			 * @returns {boolean} true for dates, false for timelines
-			 */
-			function isPointInTime(lineArray) {
-				var temp = lineArray.slice();
-				var empty;
-				removeElement(temp, empty);
-				return (temp.length == 1);
-				/** inner */
-				function removeElement(arr) {
-					var what, a = arguments, L = a.length, ax;
-					while (L > 1 && arr.length) {
-						what = a[--L];
-						while ((ax= arr.indexOf(what)) !== -1) {
-							arr.splice(ax, 1);
-						}
-					}
-					return arr;
-				}
-			}
-			
-			
-///////////////////////
+
 			var	world, timeline; 
 
 			window.onload = function () {
 				world = new WorldMorph(document.getElementById('world'));
 				world.setColor(api_backColor);
+				setup();
 				timeline = new TimelineMorph();
 				timeline.useFillPage = true;
 				timeline.setPosition(new Point(0, 0));
