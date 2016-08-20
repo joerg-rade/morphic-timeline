@@ -8,9 +8,7 @@ function setup() {
 			 * Type of field parent changes from string to Object!
 			 */
 			function initData() {
-				var e;
-				var parent;
-				var rgb;
+				var e, p, t, rgb;
 				var jsonData = JSON.parse(data);
 				for (i = 0; i < jsonData.events.length; i++) {
 					e = jsonData.events[i];
@@ -20,25 +18,29 @@ function setup() {
 						rgb = hexToRgb(e.color);
 						e.color = new Color(rgb.r, rgb.g, rgb.b);
 					}
-					e.children = [];
-					parent = findParentFor(e);
-					if (parent !== null) {
-						parent.children.push(e);
+					e.child = null;
+					// at this very moment parent is still a string
+					t = e.parent;
+					p = findParentByName(t); 
+					if (p === null) {
+						e.parent = null;
+					} else {
+						e.parent = p;
+						p.child = e;
 					}
 					eventList.push(e);
 				}
-				/** inner - only called by enclosing function */
-				function findParentFor(childEvent) {
-					var key = childEvent.parent;
+				/** nested - only called by enclosing function */
+				function findParentByName(title) {
 					for (p = 0; p < eventList.length; p++) {
-						if (key == eventList[p].label) {
+						if (title === eventList[p].title) {
 							// first match wins
 							return eventList[p];
 						}
 					}
 					return null;
 				}
-				/** inner - only called by enclosing function */
+				/** nested - only called by enclosing function */
 				function hexToRgb(hex) {
 					var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
 					return result ? {
@@ -68,7 +70,7 @@ function setup() {
 				 * Sort eventList by endDate.
 				 * @returns last {Date}
 				 */
-				/** inner - only called by enclosing function */
+				/** nested - only called by enclosing function */
 				function omega() {
 					eventList.sort(function(a, b){return a.endDate > b.endDate});
 					var omega = eventList[eventList.length - 1].endDate;
@@ -89,21 +91,34 @@ function setup() {
 
 function line(event, index) {
 var lineArray = [];
-	var empty;
+	var empty, i;
 	if (event) {
 		var d = new Date(alpha());
 		while (d < event.startDate) {
 			lineArray.push(empty);
 			d.setDate(d.getDate() + 1);
 		}
-		//TODO use api_var(s) 
-		var yPos = 180 - (index * api_scrollBarHeight);
+		i = index;
+		if (event.parent !== null) {
+			i = parentIndex(event);
+		}
+		var yPos = api_timelineOffset - (i * api_timelineHeight);
 		while (d < event.endDate) {
 			lineArray.push(yPos);
 			d.setDate(d.getDate() + 1);
 		}
 	}
 	return lineArray;
+
+	/** nested - find the index of the parent in list */
+	function parentIndex(event) {
+		var idx;
+		if (event.parent !== null) {
+			idx = eventList.indexOf(event.parent);
+		}
+		//TODO add recursive call
+		return idx;
+	}	
 }
 
 /** 
@@ -128,7 +143,7 @@ function hasDuration(lineArray) {
 	var answer = (arr.length > 1);
 	return answer;
 	
-	/** inner - only called by enclosing function */
+	/** nested - only called by enclosing function */
 	function removeElementFromArray(e, a) {
 		var answer = [];
 		for (var i = 1; i <= a.length; i++) {
