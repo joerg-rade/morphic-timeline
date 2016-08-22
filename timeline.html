@@ -9,7 +9,7 @@
 		<script type="text/javascript">		
 		//TODOs
 		// place checkboxes above graph -> AlignmentMorph (widget.js)
-		// how can the world sale to 100%, take the available area?
+		// how can the world scale to 100%, take the available area?
 		// how can timelineBars have labels?
 		//
 		// checkboxes flat instead of 3d
@@ -21,6 +21,13 @@
 		// - assign thumbnail of complete graph
 		// - set focus either on actual date or one passed in
 		// - hScroll without roundings
+		//
+		// have distances between tl bars evenly distributed, 
+		// especially with parent/child joins in one line
+		//
+		// no fade out of vertical lines
+		//
+		// allow for milestones <> without duration
 
 			/**
 			 * styling (css like) and dimensional parameters
@@ -45,7 +52,10 @@
 			var data = '{"events" : [' +
 '{ "title":"Vacation", "startDate":"2016-07-22", "endDate":"2016-08-15", "color":"#FFFF00"  }' +
 ',{ "title":"Release 2.11", "startDate":"2016-02-15", "endDate":"2016-08-17", "color":"#6A5ACD" }' +
+',{ "title":"Test", "startDate":"2016-07-17", "endDate":"2016-08-17", "color":"#00FF00", "parent":"Release 2.11" }' +
 ',{ "title":"GoLive", "startDate":"2016-08-17", "endDate":"2016-08-18", "color":"#FF0000", "parent":"Release 2.11" }' +
+',{ "title":"Release 2.12", "startDate":"2016-06-15", "endDate":"2016-11-23", "color":"#6A5ACD" }' +
+',{ "title":"GoLive", "startDate":"2016-11-23", "endDate":"2016-11-24", "color":"#FF0000", "parent":"Release 2.12" }' +
 ',{ "title":"Release 3.3", "startDate":"2016-04-11", "endDate":"2016-09-05", "color":"#87CEEB" }' +
 ',{ "title":"Release 3.4", "startDate":"2016-07-01", "endDate":"2016-12-31", "color":"#87CEEB" }' +
 ']}';
