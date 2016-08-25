@@ -1,124 +1,114 @@
-function setup() {
-			initData();
-			initScale();
-			
-			/**
-			 * Turn Strings into Objects (date, color, parent).
-			 * Link children to their parent based on String value of filed 'parent' of the json data. 
-			 * Type of field parent changes from string to Object!
-			 */
-			function initData() {
-				var e, p, t, rgb;
-				var jsonData = JSON.parse(data);
-				for (i = 0; i < jsonData.events.length; i++) {
-					e = jsonData.events[i];
-					e.startDate = new Date(e.startDate);
-					e.endDate = new Date(e.endDate);
-					if (e.color !== null) {
-						rgb = hexToRgb(e.color);
-						e.color = new Color(rgb.r, rgb.g, rgb.b);
-					}
-					e.child = null;
-					// at this very moment parent is still a string
-					t = e.parent;
-					p = findParentByName(t); 
-					if (p === null) {
-						e.parent = null;
-					} else {
-						e.parent = p;
-						p.child = e;
-					}
-					eventList.push(e);
-				}
-				/** nested - only called by enclosing function */
-				function findParentByName(title) {
-					for (p = 0; p < eventList.length; p++) {
-						if (title === eventList[p].title) {
-							// first match wins
-							return eventList[p];
-						}
-					}
-					return null;
-				}
-				/** nested - only called by enclosing function */
-				function hexToRgb(hex) {
-					var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-					return result ? {
-						r: parseInt(result[1], 16),
-						g: parseInt(result[2], 16),
-						b: parseInt(result[3], 16)
-					} : null;
-				}
+/**
+ * Turn Strings into Objects (date, color, parent).
+ * Link children to their parent based on String value of filed 'parent' of the json data. 
+ * Type of field parent changes from string to Object!
+ */
+function initData() {
+	var e, p, t, rgb, parentCnt = 0;
+	var jsonData = JSON.parse(data);
+	for (i = 0; i < jsonData.events.length; i++) {
+		e = jsonData.events[i];
+		e.startDate = new Date(e.startDateStr);
+		e.endDate = new Date(e.endDateStr);
+		if (e.color !== null) {
+			rgb = hexToRgb(e.colorStr);
+			e.color = new Color(rgb.r, rgb.g, rgb.b);
+		}
+		e.children = [];
+		// at this very moment parent is still a string
+		t = e.parent;
+		p = findParentByName(t); 
+		// since we have only two generations we get along this way
+		if (p === null) {
+			e.parent = null;
+			parentCnt += 1;
+		} else {
+			e.parent = p;
+			p.children.push(e);
+		}
+		e.index = parentCnt;
+		eventList.push(e);
+	}
+	for (i = 0; i < eventList.length; i++) {
+		e = eventList[i];
+		e.line = line(e);
+	}	
+	/** nested inner 
+	 *  assumes: parents are defined before children
+	*/
+	function findParentByName(id) {
+		for (p = 0; p < eventList.length; p++) {
+			if (id === eventList[p].id) {
+				// first match wins
+				return eventList[p];
 			}
-			
-			/**
-			 * Initializes scale label and data, 
-			 * starting with earliest startDate (alpha) and 
-			 * ending at latest endDate (omega).
-			 */
-			function initScale() {			
-				var d = new Date(alpha());
-				var label;
-				while (d < omega()) {
-					scaleData.push(d);
-					label = d.toDateString().split(" ");
-					scaleLabels.push(label[1] + "\n" + label[2]);
-					d.setDate(d.getDate() + 1);
-				};
-
-				/** 
-				 * Sort eventList by endDate.
-				 * @returns last {Date}
-				 */
-				/** nested - only called by enclosing function */
-				function omega() {
-					eventList.sort(function(a, b){return a.endDate > b.endDate});
-					var omega = eventList[eventList.length - 1].endDate;
-					return omega;
-				}	
+		}
+		return null;
+	}
+	/** nested inner */
+	function hexToRgb(hex) {
+		var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+		return result ? {
+			r: parseInt(result[1], 16),
+			g: parseInt(result[2], 16),
+			b: parseInt(result[3], 16)
+		} : null;
+	}
+	
+	/** nested inner */
+	function line(event) {
+		var lineArray = [];
+		var empty;
+		if (event) {
+			var d = new Date(alpha());
+			while (d < event.startDate) {
+				lineArray.push(empty);
+				d.setDate(d.getDate() + 1);
 			}
-						
-			function daysBetween(date1, date2) {
-				var msPerDay = 1000 * 60 * 60 * 24; // 1 day in milliseconds
-				var date1_ms = date1.getTime(); // as milliseconds
-				var date2_ms = date2.getTime();
-				var diff_ms = date2_ms - date1_ms;
-				var days = Math.round(diff_ms/msPerDay); 
-				return days;
+			var yPos = api_timelineOffset - (event.index * api_timelineHeight);
+			while (d < event.endDate) {
+				lineArray.push(yPos);
+				d.setDate(d.getDate() + 1);
 			}
-			
+		}
+		return lineArray;
+	}
 }
 
-function line(event, index) {
-var lineArray = [];
-	var empty, i;
-	if (event) {
-		var d = new Date(alpha());
-		while (d < event.startDate) {
-			lineArray.push(empty);
-			d.setDate(d.getDate() + 1);
-		}
-		i = index;
-		if (event.parent !== null) {
-			i = parentIndex(event);
-		}
-		var yPos = api_timelineOffset - (i * api_timelineHeight);
-		while (d < event.endDate) {
-			lineArray.push(yPos);
-			d.setDate(d.getDate() + 1);
-		}
-	}
-	return lineArray;
 
-	/** nested - find the index of the parent in list */
-	function parentIndex(event) {
-		var idx;
-		if (event.parent !== null) {
-			idx = eventList.indexOf(event.parent);
-		}
-		//TODO add recursive call
-		return idx;
+/**
+ * Initializes scale label and data, 
+ * starting with earliest startDate (alpha) and 
+ * ending at latest endDate (omega).
+ */
+function initScale() {			
+	var d = new Date(alpha());
+	var label;
+	while (d < omega()) {
+		scaleData.push(d);
+		label = d.toDateString().split(" ");
+		scaleLabels.push(label[1] + "\n" + label[2]);
+		d.setDate(d.getDate() + 1);
+	};
+
+	/** nested inner
+	 * Sort eventList by endDate.
+	 * @returns last {Date}
+	 */
+	function omega() {
+		eventList.sort(function(a, b){return a.endDate > b.endDate});
+		var omega = eventList[eventList.length - 1].endDate;
+		return omega;
 	}	
+}
+			
+function daysBetween(date1, date2) {
+	var msPerDay = 1000 * 60 * 60 * 24; // 1 day in milliseconds
+	var date1_ms = date1.getTime(); // as milliseconds
+	var date2_ms = date2.getTime();
+	var diff_ms = date2_ms - date1_ms;
+	var days = Math.round(diff_ms/msPerDay); 
+	return days;
 }
 
 /** 

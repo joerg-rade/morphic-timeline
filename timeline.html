@@ -27,7 +27,7 @@
 		//
 		// no fade out of vertical lines
 		//
-		// allow for milestones <> without duration
+		// allow for milestones <> without duration, currently 1 day
 
 			/**
 			 * styling (css like) and dimensional parameters
@@ -36,41 +36,42 @@
 			var api_fontStyle = 'sans-serif'; //'1px serif' 'monospaced'
 			var api_backColor = new Color(255, 255, 255); //white
 			var api_textColor = new Color(0, 0, 0); //black;
-			var api_red = new Color(255, 0, 0); //red - for test only
+			var api_defaultColor = new Color(255, 0, 0); //red - for test only
 			var api_enableResize = false;
 			var api_width = 800;
 			var api_height = 600;
 			var api_scrollBarHeight = 40; // horizontal
 			var api_timelineHeight = 15; // Bar height
 			var api_timelineOffset = 180; // offset for the tl bars
-			var api_dateHeight = 10; // extent of the date marker
-			var api_dateLineWidth = 1; // border of the date marker
+			var api_dateHeight = 7; // extent of the date marker
+			var api_dateLineWidth = 3; // border of the date marker
 			var api_padding = 0;
 			
 			/** (sample) event data */
 			// minimum duration = 1 day for eventWOduration ... FIXME
 			var data = '{"events" : [' +
-'{ "title":"Vacation", "startDate":"2016-07-22", "endDate":"2016-08-15", "color":"#FFFF00"  }' +
-',{ "title":"Release 2.11", "startDate":"2016-02-15", "endDate":"2016-08-17", "color":"#6A5ACD" }' +
-',{ "title":"Test", "startDate":"2016-07-17", "endDate":"2016-08-17", "color":"#00FF00", "parent":"Release 2.11" }' +
-',{ "title":"GoLive", "startDate":"2016-08-17", "endDate":"2016-08-18", "color":"#FF0000", "parent":"Release 2.11" }' +
-',{ "title":"Release 2.12", "startDate":"2016-06-15", "endDate":"2016-11-23", "color":"#6A5ACD" }' +
-',{ "title":"GoLive", "startDate":"2016-11-23", "endDate":"2016-11-24", "color":"#FF0000", "parent":"Release 2.12" }' +
-',{ "title":"Release 3.3", "startDate":"2016-04-11", "endDate":"2016-09-05", "color":"#87CEEB" }' +
-',{ "title":"Release 3.4", "startDate":"2016-07-01", "endDate":"2016-12-31", "color":"#87CEEB" }' +
+'{ "id":"Vacation", "startDateStr":"2016-07-22", "endDateStr":"2016-08-15", "colorStr":"#FFFF00"  }' +
+',{ "id":"Release 2.11", "startDateStr":"2016-02-15", "endDateStr":"2016-08-17", "colorStr":"#6A5ACD" }' +
+',{ "id":"Test", "startDateStr":"2016-07-17", "endDateStr":"2016-08-17", "colorStr":"#00FF00", "parent":"Release 2.11" }' +
+',{ "id":"GoLive", "startDateStr":"2016-08-17", "endDateStr":"2016-08-18", "colorStr":"#FF0000", "parent":"Release 2.11" }' +
+',{ "id":"Release 2.12", "startDateStr":"2016-06-15", "endDateStr":"2016-11-23", "colorStr":"#6A5ACD" }' +
+',{ "id":"GoLive", "startDateStr":"2016-11-23", "endDateStr":"2016-11-24", "colorStr":"#FF0000", "parent":"Release 2.12" }' +
+',{ "id":"Release 3.3", "startDateStr":"2016-04-11", "endDateStr":"2016-09-05", "colorStr":"#87CEEB" }' +
+',{ "id":"Release 3.4", "startDateStr":"2016-07-01", "endDateStr":"2016-12-31", "colorStr":"#87CEEB" }' +
 ']}';
 			
 			/** global vars */
-			var eventList = [];
-			var scaleLabels = [];			
-			var scaleData = [];	
+			var eventList = []; // better call initEvents(data);
+			var scaleLabels = [];	// better call initScale()
+			var scaleData = [];	 
 
-			var	world, timeline; 
+			var	world, timeline, root; 
 
 			window.onload = function () {
 				world = new WorldMorph(document.getElementById('world'));
 				world.setColor(api_backColor);
-				setup();
+				initData();
+				initScale();
 				timeline = new TimelineMorph();
 				timeline.useFillPage = true;
 				timeline.setPosition(new Point(0, 0));

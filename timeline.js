@@ -104,16 +104,8 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 
 	this.isFilled = true;
 	// API x-axis labels
-    this.columns = scaleLabels;
-	
+    this.columns = scaleLabels;	
 	this.columnInterval = 1;
-
-	//API data
-	//TODO: better use object encapsulating values instead of group of arrays
-	this.lines = [];
-	for (i = 0; i < eventList.length; i++) {
-		this.lines.push(line(eventList[i], i));
-	}
 
 	// initialize inherited attributes:
 	GridMorph.uber.init.call(this);
@@ -202,20 +194,22 @@ GridMorph.prototype.drawNew = function () {
 };
 
 GridMorph.prototype.createLines = function () {
-	var myself = this, lm, i = 0;
-	this.lines.forEach(function (line) {
+	var myself = this, lm, i, e;
+//	this.eventList.forEach(function (line) {
+	for (i=0; i < eventList.length; i++) {
+		e = eventList[i];
 		lm = new LineMorph(
-			eventList[i].title, // tl data array
+			e.id, // tl data array
 			myself.xUnits,
 			myself.yUnits,
-			line,
-			eventList[i].color,
+			e.line,
+			e.color,
 			this.isFilled
 		);
 		lm.setPosition(myself.position().copy());
 		myself.add(lm);
-		i += 1;
-	});
+		//i += 1;
+	};
 };
 
 GridMorph.prototype.createLabels = function () {
@@ -515,8 +509,8 @@ TimelineMorph.prototype.buildParts = function () {
 	//Part 3 H-Scrollbar 
 	this.frame = new ScrollFrameMorph(this.contents, api_scrollBarHeight);
 	this.frame.hBar.alpha = 0.1;
-	this.frame.hBar.color = api_red; 
-	this.frame.hBar.button.color = api_red; 
+	this.frame.hBar.color = api_defaultColor; 
+	this.frame.hBar.button.color = api_defaultColor; 
 	this.frame.hBar.button.alpha = 0.3;
 	this.frame.isDraggable = false;
 	this.frame.acceptsDrops = false;
