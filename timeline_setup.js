@@ -103,12 +103,12 @@ function initEvents() {
 		var empty;
 		if (event) {
 			var d = new Date(alpha());
-			var yPos = api_timelineOffset - (event.index * api_timelineHeight);
+			event.yPos = api_timelineOffset - (event.index * api_timelineHeight);
 			while (d < event.endDate) {
 				if (d < event.startDate) {
 					lineArray.push(empty);
 				} else {
-					lineArray.push(yPos);
+					lineArray.push(event.yPos);
 				}
 				d.setDate(d.getDate() + 1);
 			}
@@ -191,11 +191,11 @@ function hasDuration(lineArray) {
  * answers the label of the first match
  * assumes: parents are defined before children
  */
-function findByYPos(yPos) {
+function findLabelByYPos(yPos) {
 	for (var p = 0; p < eventList.length; p++) {
-		if (yPos === eventList[p].y) {
+		if (yPos === eventList[p].yPos) {
 			// first match wins
-			return eventList[p];
+			return eventList[p].id;
 		}
 	}
 }

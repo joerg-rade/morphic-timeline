@@ -158,9 +158,6 @@ GridMorph.prototype.drawNew = function () {
 	context = this.image.getContext('2d');
 	context.lineWidth = this.axesWidth;
 
-	// no lines: 0000 1111
-	// lines: 1000, 1100 1110 1001 0001 0011 0111 1011 1101
-
 	// axes:
 	context.beginPath();
 	context.moveTo(this.axesWidth / 2, 0);
@@ -323,7 +320,6 @@ LineMorph.prototype.drawNew = function () {
 	context = this.image.getContext('2d');
 	context.strokeStyle = this.color.toString();
 	context.lineWidth = api_timelineHeight;
-//	context.lineJoin = 'round'; no effect?
 
 	this.linePath(context);
 	context.stroke();
@@ -368,7 +364,7 @@ LineMorph.prototype.linePath = function (context) {
 };
 
 //Fills area below the lines with halftones, 0.2
-LineMorph.prototype.fill = function (context) {
+LineMorph.prototype.fill = function () {
 };
 
 LineMorph.prototype.startStepping = function () {
@@ -377,9 +373,12 @@ LineMorph.prototype.startStepping = function () {
 	this.step = function () {
 		var	pos = myself.world().hand.position(),
 			value = this.valueAt(pos.x - this.left()),
-			rider = this.rider();
-//		rider.label().setText(Math.round(value));
-rider.label().setText('A\nB'); // setText requires a number ...
+			rider = this.rider()
+//			,label = Math.round(value) // old
+//		    label = 'A\nB', // would require TextMorph instead of StringMorph
+		    ,label = findLabelByYPos(Math.round(value))
+		    ;
+		rider.label().setText(label);
 		rider.label().setCenter(rider.center());
 		rider.setCenter(new Point(
 			pos.x,
