@@ -6,7 +6,7 @@
 		<script type="text/javascript" src="widgets.js"></script>
 		<script type="text/javascript" src="timeline.js"></script>
 		<script type="text/javascript" src="timeline_setup.js"></script>
-		<script type="text/javascript">		
+		<script type="text/javascript">
 		//TODOs
 		// place checkboxes above graph -> AlignmentMorph (widget.js)
 		// how can the world scale to 100%, take the available area?
@@ -17,15 +17,10 @@
 		// scale x-axis according to passed in Time scale, days, months, etc.
 
 		// avoid v-scrollbar and use default 'scale'
-		// have h-scrollbar as birds eye view 
+		// have h-scrollbar as birds eye view
 		// - assign thumbnail of complete graph
 		// - set focus either on actual date or one passed in
-		// - hScroll without roundings
-		//
-		// have distances between tl bars evenly distributed, 
-		// especially with parent/child joins in one line
-		//
-		// no fade out of vertical lines
+		// - hScroll without roundings -> HandleMorph square?
 		//
 		// allow for milestones <> without duration, currently 1 day
 
@@ -33,10 +28,11 @@
 			 * styling (css like) and dimensional parameters
 			 */
 			var api_fontSize = 15;
-			var api_fontStyle = 'sans-serif'; //'1px serif' 'monospaced'
+			//TODO not used yet
+//			var api_fontStyle = '1px serif'; //'1px serif' 'monospaced' 'sans-serif'
 			var api_backColor = new Color(255, 255, 255); //white
 			var api_textColor = new Color(0, 0, 0); //black;
-			var api_defaultColor = new Color(255, 0, 0); //red - for test only
+			var api_defaultColor = new Color(255, 0, 0); //red
 			var api_enableResize = false;
 			var api_width = 800;
 			var api_height = 600;
@@ -46,31 +42,35 @@
 			var api_dateHeight = 7; // extent of the date marker
 			var api_dateLineWidth = 3; // border of the date marker
 			var api_padding = 0;
-			
+			var api_xInterval = 30; //density of the vertical lines 1=daily 7=weekly, 30~monthly
+			//TODO use enumeration and algorithmic calculation
+			// intra/subday events not handled yet
+
 			/** (sample) event data */
-			// minimum duration = 1 day for eventWOduration ... FIXME
+			// Events w/o enddate are set to a 1 day duration and rendered as 'salino'
+			// if color is not set defaultColor (red/FF0000) will be used
 			var data = '{"events" : [' +
 '{ "id":"Vacation", "startDateStr":"2016-07-22", "endDateStr":"2016-08-15", "colorStr":"#FFFF00"  }' +
 ',{ "id":"Release 2.11", "startDateStr":"2016-02-15", "endDateStr":"2016-08-17", "colorStr":"#6A5ACD" }' +
 ',{ "id":"Test", "startDateStr":"2016-07-17", "endDateStr":"2016-08-17", "colorStr":"#00FF00", "parent":"Release 2.11" }' +
-',{ "id":"GoLive", "startDateStr":"2016-08-17", "endDateStr":"2016-08-18", "colorStr":"#FF0000", "parent":"Release 2.11" }' +
+',{ "id":"GoLive", "startDateStr":"2016-08-17", "colorStr":"#FF0000", "parent":"Release 2.11" }' +
 ',{ "id":"Release 2.12", "startDateStr":"2016-06-15", "endDateStr":"2016-11-23", "colorStr":"#6A5ACD" }' +
-',{ "id":"GoLive", "startDateStr":"2016-11-23", "endDateStr":"2016-11-24", "colorStr":"#FF0000", "parent":"Release 2.12" }' +
+',{ "id":"GoLive", "startDateStr":"2016-11-23", "parent":"Release 2.12" }' +
 ',{ "id":"Release 3.3", "startDateStr":"2016-04-11", "endDateStr":"2016-09-05", "colorStr":"#87CEEB" }' +
 ',{ "id":"Release 3.4", "startDateStr":"2016-07-01", "endDateStr":"2016-12-31", "colorStr":"#87CEEB" }' +
 ']}';
-			
-			/** global vars */
-			var eventList = []; // better call initEvents(data);
-			var scaleLabels = [];	// better call initScale()
-			var scaleData = [];	 
 
-			var	world, timeline, root; 
+			/** global vars */
+			var eventList = [];
+			var scaleLabels = [];
+			var scaleData = [];
+
+			var	world, timeline, root;
 
 			window.onload = function () {
 				world = new WorldMorph(document.getElementById('world'));
 				world.setColor(api_backColor);
-				initData();
+				initEvents();
 				initScale();
 				timeline = new TimelineMorph();
 				timeline.useFillPage = true;
@@ -82,13 +82,13 @@
 			function loop() {
 				world.doOneCycle();
 			}
-			
+
 		</script>
 	</head>
 
 	<body>
 		<canvas id="world" tabindex="1" width="100%" height="100%" style="position: absolute;">
-			<p>Your browser doesn't support canvas.</p>
+			Your browser doesn't support canvas.
 		</canvas>
 	</body>
 </html>

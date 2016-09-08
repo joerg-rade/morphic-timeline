@@ -1,4 +1,4 @@
-/*
+/**
 
 	timeline.js
 
@@ -66,8 +66,7 @@ var LineMorph;
 var TimelineMorph;
 
 WorldMorph.prototype.customMorphs = function () {
-	// add examples to the world's demo menu
-
+	// add to the world's demo menu
 	return [
 		new GridMorph(),
 		new TimelineMorph()
@@ -82,7 +81,6 @@ GridMorph.prototype.constructor = GridMorph;
 GridMorph.uber = Morph.prototype;
 
 // GridMorph instance creation:
-
 function GridMorph() {
 	this.init();
 }
@@ -93,18 +91,17 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 
 	//API xUnits determines how many days etc. are displayed
 	this.xUnits = x || (x === 0 ? 0 : 320);// TODO use spannedDays
-	this.yUnits = y || (y === 0 ? 0 : 200); 
-	//TODO API density of the vertical lines 1=daily 7=weekly
-	this.xInterval = xLines || 7;
+	this.yUnits = y || (y === 0 ? 0 : 200);
+	this.xInterval = xLines || api_xInterval;
 	this.yInterval = yLines || 25;
 
 	this.axesWidth = 1;
-	this.lineWidth = 0.2;
+	this.lineWidth = 0.5; // 0.2 eg. leads to a fading effect like in gradient
 	this.fontSize = api_fontSize;
 
 	this.isFilled = true;
 	// API x-axis labels
-    this.columns = scaleLabels;	
+    this.columns = scaleLabels;
 	this.columnInterval = 1;
 
 	// initialize inherited attributes:
@@ -113,8 +110,7 @@ GridMorph.prototype.init = function (x, y, xLines, yLines) {
 	// override inherited attributes:
 	this.noticesTransparentClick = true;
 	this.color = api_textColor;
-//	vertical lines for times
-    this.color.a = 0.05;
+
 	this.createLabels();
 	this.createLines();
 	this.fixLayout();
@@ -139,7 +135,7 @@ GridMorph.prototype.fixLayout = function () {
 				m.setCenter(new Point(
 					myself.left() + colNo * xunit,
 		// move time labels above x axis: - instead of +
-					myself.bottom() - myself.fontSize
+					myself.bottom() + myself.fontSize
 				));
 			} else {
 				m.hide();
@@ -152,18 +148,18 @@ GridMorph.prototype.fixLayout = function () {
 
 GridMorph.prototype.drawNew = function () {
 	// initialize my surface property
-	var context, i, x, y, temp;
+	var context, i, x, temp;
 
 	temp = this.color;
 	this.color = this.backgroundColor;
 	GridMorph.uber.drawNew.call(this);
 	this.color = temp;
 
-	//this.image = newCanvas(this.extent());
 	context = this.image.getContext('2d');
-
 	context.lineWidth = this.axesWidth;
-	context.strokeStyle = this.color.toString();
+
+	// no lines: 0000 1111
+	// lines: 1000, 1100 1110 1001 0001 0011 0111 1011 1101
 
 	// axes:
 	context.beginPath();
@@ -195,7 +191,6 @@ GridMorph.prototype.drawNew = function () {
 
 GridMorph.prototype.createLines = function () {
 	var myself = this, lm, i, e;
-//	this.eventList.forEach(function (line) {
 	for (i=0; i < eventList.length; i++) {
 		e = eventList[i];
 		lm = new LineMorph(
@@ -208,12 +203,11 @@ GridMorph.prototype.createLines = function () {
 		);
 		lm.setPosition(myself.position().copy());
 		myself.add(lm);
-		//i += 1;
 	};
 };
 
 GridMorph.prototype.createLabels = function () {
-	var	myself = this, lm; 
+	var	myself = this, lm;
 
 	this.columns.forEach(function (col) {
 		lm = new TextMorph(
@@ -260,8 +254,6 @@ function LineMorph(label, x, y, values, color, isFilled) {
 }
 
 LineMorph.prototype.init = function (label, x, y, values, color, isFilled) {
-	var rider;
-
 	// additional attributes:
 //	checkBox label
 	this.label = label || 'not set in data';
@@ -269,11 +261,6 @@ LineMorph.prototype.init = function (label, x, y, values, color, isFilled) {
 	this.yUnits = y || (y === 0 ? 0 : 200);
 	this.values = values || [];
 	this.isFilled = isFilled || false;
-
-	//this.lineWidth = api_barHeight;
-
-//	rider = new BoxMorph(this.lineWidth);
-//	this.add(rider);
 
 	// initialize inherited attributes:
 	LineMorph.uber.init.call(this);
@@ -307,7 +294,7 @@ LineMorph.prototype.rider = function () {
     }
 	// setting constant text here has no effect
     lbl = new StringMorph(
-        this.yUnits,
+        this.yUnits, // h-size of the box
         10,
         null,
         false,
@@ -320,7 +307,7 @@ LineMorph.prototype.rider = function () {
 
     rider = new BoxMorph(lbl.height() / 2);
     rider.border = 1;
-    rider.setExtent(lbl.extent().add(rider.border + 4)); 
+    rider.setExtent(lbl.extent().add(rider.border + 4));
     rider.drawNew = TimelineMorph.prototype.drawGradient;
     rider.label = function () {return lbl; };
     rider.add(lbl);
@@ -336,7 +323,7 @@ LineMorph.prototype.drawNew = function () {
 	context = this.image.getContext('2d');
 	context.strokeStyle = this.color.toString();
 	context.lineWidth = api_timelineHeight;
-	context.lineJoin = 'round';
+//	context.lineJoin = 'round'; no effect?
 
 	this.linePath(context);
 	context.stroke();
@@ -360,12 +347,12 @@ LineMorph.prototype.linePath = function (context) {
 			} else {
 				context.lineTo(x, y);
 			}
-			if (! drawLine) {
-				if  (!isNaN(y)) drawMilestone();
+			if (! drawLine && !isNaN(y)) {
+					drawMilestone();
 			}
 		}
 	}
-	
+
 	/** inner - only called by enclosing function */
 	/** draw a 'salino' for events without duration */
 	function drawMilestone() {
@@ -376,7 +363,7 @@ LineMorph.prototype.linePath = function (context) {
 		context.lineTo(x + r, y);
 		context.lineTo(x, y - r);
 		context.lineTo(x - r, y);
-		context.stroke();		
+		context.stroke();
 	}
 };
 
@@ -389,9 +376,10 @@ LineMorph.prototype.startStepping = function () {
 	this.rider().show();
 	this.step = function () {
 		var	pos = myself.world().hand.position(),
-			value = this.valueAt(pos.y - this.left()),
+			value = this.valueAt(pos.x - this.left()),
 			rider = this.rider();
-		rider.label().setText(Math.round(value));
+//		rider.label().setText(Math.round(value));
+rider.label().setText('A\nB'); // setText requires a number ...
 		rider.label().setCenter(rider.center());
 		rider.setCenter(new Point(
 			pos.x,
@@ -457,7 +445,7 @@ TimelineMorph.prototype.init = function () {
 };
 
 TimelineMorph.prototype.buildParts = function () {
-	var grid = this.contents, i, lm, last, myself = this;
+	var grid = this.contents, lm, last, myself = this;
 
 // Part 1 / top
 	this.labelMorph = new StringMorph(
@@ -469,7 +457,7 @@ TimelineMorph.prototype.buildParts = function () {
 	);
 	this.labelMorph.setColor(api_textColor);
 
-// Part 5 / bottom	
+// Part 5 / bottom
 	this.legend = new Morph();
 	this.legend.color = api_backColor;
 	this.add(this.legend);
@@ -486,11 +474,8 @@ TimelineMorph.prototype.buildParts = function () {
 				null
 			);
 			lm.color = c.color;
-			lm.highlightColor = c.color.lighter();
-			lm.pressColor = c.color.darker();
 			lm.drawNew();
 			lm.label.setColor(api_textColor);
-			// API
 			lm.label.setFontSize(api_fontSize);
 			myself.legend.add(lm);
 			if (last) {
@@ -506,11 +491,11 @@ TimelineMorph.prototype.buildParts = function () {
 		}
 	});
 
-	//Part 3 H-Scrollbar 
+	//Part 3 H-Scrollbar
 	this.frame = new ScrollFrameMorph(this.contents, api_scrollBarHeight);
 	this.frame.hBar.alpha = 0.1;
-	this.frame.hBar.color = api_defaultColor; 
-	this.frame.hBar.button.color = api_defaultColor; 
+	this.frame.hBar.color = api_defaultColor;
+	this.frame.hBar.button.color = api_defaultColor;
 	this.frame.hBar.button.alpha = 0.3;
 	this.frame.isDraggable = false;
 	this.frame.acceptsDrops = false;
@@ -523,8 +508,6 @@ TimelineMorph.prototype.buildParts = function () {
 
 	this.zoomer = new SliderMorph();
 	this.zoomer.orientation = 'vertical';
-	//TODO no idea what zoomer.size does
-	//this.zoomer.size = 40;
 	this.zoomer.target = this;
 	this.zoomer.action = 'zoom';
 	this.add(this.zoomer);
@@ -561,7 +544,6 @@ TimelineMorph.prototype.fixLayout = function () {
 			this.left() /*+ inset*/,
 			this.labelMorph.bottom() + this.border + this.padding
 		));
-//alert(this.labelMorph.bottom());
 		this.frame.bounds.corner = this.legend.topRight().subtract(new Point(
 			18 + this.padding,
 			this.padding
@@ -615,21 +597,16 @@ TimelineMorph.prototype.zoom = function (w) {
 };
 
 // TimelineMorph drawing:
-
 TimelineMorph.prototype.drawGradient = function () {
-	var	context,
-		gradient;
+	var	context;
 	this.image = newCanvas(this.extent());
 	context = this.image.getContext('2d');
 	if ((this.edge === 0) && (this.border === 0)) {
 		BoxMorph.uber.drawNew.call(this);
 		return null;
 	}
-	//TODO API gradient.color
-	gradient = context.createLinearGradient(255, 255, 255, this.height());
-	gradient.addColorStop(0, this.color.lighter(30).toString());
-	gradient.addColorStop(1, this.color.darker(30).toString());
-	context.fillStyle = gradient;
+	context.fillStyle = api_defaultColor.toString();
+	context.strokeStyle = api_defaultColor.toString();
 	context.beginPath();
 	this.outlinePath(
 		context,
@@ -638,12 +615,9 @@ TimelineMorph.prototype.drawGradient = function () {
 	);
 	context.closePath();
 	if (this.border > 0) {
-		//TODO API gradient.color
-		gradient = context.createLinearGradient(255, 255, 255, this.height());
-		gradient.addColorStop(0, this.borderColor.lighter(30).toString());
-		gradient.addColorStop(1, this.borderColor.darker(30).toString());
 		context.lineWidth = this.border;
-		context.strokeStyle = gradient;
+		context.strokeStyle = api_defaultColor.toString();
+		context.fillStyle = api_defaultColor.toString();
 		context.beginPath();
 		this.outlinePath(context, this.edge, this.border / 2);
 		context.closePath();

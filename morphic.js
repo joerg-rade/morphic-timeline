@@ -7545,9 +7545,11 @@ StringMorph.prototype.setFontSize = function (size) {
     this.changed();
 };
 
-StringMorph.prototype.setText = function (size) {
+//was ... function(size)
+StringMorph.prototype.setText = function (string) {
     // for context menu demo purposes
-    this.text = Math.round(size).toString();
+//    this.text = Math.round(size).toString();
+	this.text = string;
     this.changed();
     this.drawNew();
     this.changed();
