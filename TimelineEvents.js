@@ -11,16 +11,6 @@ function TimelineEvents() {
 	this.listAll = function() {
 		return this.list;
 	}
-
-	this.findParentByName = function(id) {
-		for (p = 0; p < list.length; p++) {
-			if (id === list[p].id) {
-				// first match wins
-				return list[p];
-			}
-		}
-		return null;
-	}
 }
 
 TimelineEvents.prototype.init = function(json) {
@@ -53,7 +43,7 @@ TimelineEvents.prototype.init = function(json) {
 }
 
 TimelineEvents.prototype.listParents = function() {
-	return list;
+	return this.list;
 }
 
 TimelineEvents.prototype.findParentById = function(id) {

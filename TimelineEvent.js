@@ -81,6 +81,6 @@ TimelineEvent.prototype.initLine = function() {
 }
 
 TimelineEvent.prototype.label = function() {
-	var l = this.id + "\n[ " + this.startDate + "..." + this.endDate + " ]";
+	var l = this.id + "\n[ " + this.startDate.toDateString() + "..." + this.endDate.toDateString() + " ]";
 	return l;
 }
