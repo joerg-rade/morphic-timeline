@@ -8,6 +8,7 @@ function TimelineEvent(id, parent, startDateStr, endDateStr, colorStr, category)
 
 TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, colorStr, category) {
 	this.id = id || "id not set"; // aka title, name
+	this.parent = parent;
 	initDates(this, startDateStr, endDateStr);
 	this.color = initColor(colorStr) || api_defaultColor;
 	this.category = category || "NONE";
@@ -18,7 +19,6 @@ TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, co
 	 * and that they differ at least by 1 day.
 	 */
 	function initDates(o, s, e) {
-		var ONE_DAY_IN_MS = 1000 * 60 * 60 * 24; // milliseconds per day
 		o.startDate = new Date(s);
 		if (!e) {
 			e = s;
@@ -49,8 +49,8 @@ TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, co
 	 */
 	function initColor(colorStr) {
 		if (colorStr) {
-			rgb = hexToRgb(colorStr);
-			color = new Color(rgb.r, rgb.g, rgb.b);
+			var rgb = hexToRgb(colorStr);
+			var color = new Color(rgb.r, rgb.g, rgb.b);
 			return color;
 		}
 

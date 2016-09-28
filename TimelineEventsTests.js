@@ -12,6 +12,7 @@ var data = '{"events" : [' +
 
 // listAll()
 QUnit.test("test number of events", function(assert) {
+	// the global var tls is referenced in the implementation
 	tls = new TimelineEvents();
 	tls.init(JSON.parse(data));
 	var eventList = tls.listAll();

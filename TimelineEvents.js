@@ -1,3 +1,5 @@
+/* Globals */
+var ONE_DAY_IN_MS = 1000 * 60 * 60 * 24; // milliseconds per day
 /**
  * Repository/Factory for TimelineEvent.
  */
@@ -14,28 +16,25 @@ function TimelineEvents() {
 }
 
 TimelineEvents.prototype.init = function(json) {
-	var e,
+	var je, tle,
 		p,
 		t,
 		parentCnt = 0;
 	for (var i = 0; i < json.events.length; i++) {
-		e = json.events[i];
-		e = new TimelineEvent(e.id, e.parent, e.startDateStr, e.endDateStr, e.colorStr, e.category);
-		e.children = [];
-		// at this very moment parent is still a string
-		parentId = e.parent;
-		p = tls.findParentById(parentId);
+		je = json.events[i];
+		p = tls.findParentById(je.parent);
+		tle = new TimelineEvent(je.id, p, je.startDateStr, je.endDateStr, je.colorStr, je.category);
 		// since we have only two generations we get along this way
 		if (p === null) {
-			e.parent = null;
 			parentCnt += 1;
 		} else {
-			e.parent = p;
-			p.children.push(e);
+			p.children.push(tle);
 		}
-		e.index = parentCnt;
-		this.list.push(e);
+		tle.index = parentCnt;
+		this.list.push(tle);
 	}
+
+	this.list = this.sort();
 
 	this.list.forEach(function(elt) {
 		elt.initLine();
@@ -43,16 +42,24 @@ TimelineEvents.prototype.init = function(json) {
 }
 
 TimelineEvents.prototype.listParents = function() {
-	return this.list;
+	var parents = [];
+	 this.list.forEach(function(elt) {
+	 	if (!elt.parent) {
+	 		parents.push(elt);
+	 	}
+	 });
+	 return parents;
 }
 
-TimelineEvents.prototype.findParentById = function(id) {
+TimelineEvents.prototype.findParentById = function(parentId) {
+	var eid, e;
 	for (var p = 0; p < this.list.length; p++) {
-		if (id === this.list[p].id) {
-			// first match wins
-			return this.list[p];
+		e = this.list[p];
+		eid = e.id;
+		if (parentId === eid) {
+			return e;
 		}
-	}
+	};
 	return null;
 }
 
@@ -87,18 +94,29 @@ TimelineEvents.prototype.findCategoryById = function(id) {
 * ending at latest endDate (omega).
 */
 TimelineEvents.prototype.initScale = function() {
-	var d = new Date(this.earliestStartDate().getTime());
-	var e = this.latestEndDate();
+	var d = new Date(this.earliestStartDate().getTime() + 30 * ONE_DAY_IN_MS);
+	var e = new Date(this.latestEndDate().getTime() + 30 * ONE_DAY_IN_MS);
 	var label;
 	while (d < e) {
 		scaleData.push(d);
 		label = d.toDateString().split(" ");
 		scaleLabels.push(label[1] + "\n" + label[2]);
-		d.setDate(d.getDate() + 1);
+		d = new Date(d.getTime() + ONE_DAY_IN_MS);
 	}
 }
 
 /**
+ * Sort list by startDate .
+ * @returns sorted Array
+ */
+TimelineEvents.prototype.sort = function() {
+	var copy = this.list.slice();
+	copy.sort(function(a, b) {
+		return b.endDate > a.endDate
+	});
+	return copy;
+}
+	/**
  * Answers the the startDate with the lowest TS.
  * @returns first {Date}
  */
