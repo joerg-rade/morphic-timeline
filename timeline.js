@@ -76,7 +76,7 @@ GridMorph.prototype.init = function(x, y, xLines, yLines) {
 	this.backgroundColor = api_backColor;
 
 	// API xUnits determines how many days etc. are displayed
-	this.xUnits = x || (x === 0 ? 0 : 320); // TODO use spannedDays
+	this.xUnits = x || (x === 0 ? 0 : tls.span());
 	this.yUnits = y || (y === 0 ? 0 : 200);
 	this.xInterval = xLines || api_xInterval;
 	this.yInterval = yLines || 25;

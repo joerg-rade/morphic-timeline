@@ -16,7 +16,8 @@ function TimelineEvents() {
 }
 
 TimelineEvents.prototype.init = function(json) {
-	var je, tle,
+	var je,
+		tle,
 		p,
 		t,
 		parentCnt = 0;
@@ -34,32 +35,33 @@ TimelineEvents.prototype.init = function(json) {
 		this.list.push(tle);
 	}
 
-	this.list = this.sort();
+	this.list = this.sort(this.list);
 
-	this.list.forEach(function(elt) {
-		elt.initLine();
+	this.listAll().forEach(function(tle) {
+		tle.initLine();
 	})
 }
 
 TimelineEvents.prototype.listParents = function() {
 	var parents = [];
-	 this.list.forEach(function(elt) {
-	 	if (!elt.parent) {
-	 		parents.push(elt);
-	 	}
-	 });
-	 return parents;
+	this.list.forEach(function(elt) {
+		if (!elt.parent) {
+			parents.push(elt);
+		}
+	});
+	return this.sort(parents);
 }
 
 TimelineEvents.prototype.findParentById = function(parentId) {
-	var eid, e;
+	var eid,
+		e;
 	for (var p = 0; p < this.list.length; p++) {
 		e = this.list[p];
 		eid = e.id;
 		if (parentId === eid) {
 			return e;
 		}
-	};
+	}
 	return null;
 }
 
@@ -68,10 +70,20 @@ TimelineEvents.prototype.findParentById = function(parentId) {
  */
 //TODO rename to build
 TimelineEvents.prototype.findLabelByYPos = function(yPos) {
+	var e = this.findByYPos(yPos);
+	if (e) {
+		return e.label();
+	}
+}
+
+/**
+ * Answers the first matching event.
+ */
+//TODO rename to build
+TimelineEvents.prototype.findByYPos = function(yPos) {
 	for (var p = 0; p < this.list.length; p++) {
 		if (yPos === this.list[p].yPos) {
-			var e = this.list[p];
-			return e.label();
+			return this.list[p];
 		}
 	}
 }
@@ -94,7 +106,7 @@ TimelineEvents.prototype.findCategoryById = function(id) {
 * ending at latest endDate (omega).
 */
 TimelineEvents.prototype.initScale = function() {
-	var d = new Date(this.earliestStartDate().getTime() + 30 * ONE_DAY_IN_MS);
+	var d = new Date(this.earliestStartDate().getTime() - 30 * ONE_DAY_IN_MS);
 	var e = new Date(this.latestEndDate().getTime() + 30 * ONE_DAY_IN_MS);
 	var label;
 	while (d < e) {
@@ -109,14 +121,15 @@ TimelineEvents.prototype.initScale = function() {
  * Sort list by startDate .
  * @returns sorted Array
  */
-TimelineEvents.prototype.sort = function() {
-	var copy = this.list.slice();
+TimelineEvents.prototype.sort = function(list) {
+	var copy = list.slice();
 	copy.sort(function(a, b) {
-		return b.endDate > a.endDate
+		return a.endDate.getTime() > b.endDate.getTime()
 	});
 	return copy;
 }
-	/**
+
+/**
  * Answers the the startDate with the lowest TS.
  * @returns first {Date}
  */
@@ -126,25 +139,24 @@ TimelineEvents.prototype.earliestStartDate = function() {
 		return a.startDate > b.startDate
 	});
 	var alpha = copy[0].startDate;
-	if (!alpha) {
-		console,log(copy);
-	}
 	return alpha;
 }
-
+/**
+ * Answers the difference between latest endDate and earliest startDate plus some offset.
+ * @returns span {int}
+ */
+TimelineEvents.prototype.span = function() {
+	var a = this.earliestStartDate().getTime();
+	var o = this.latestEndDate().getTime();
+	return ((o - a) / ONE_DAY_IN_MS) + (2 * api_xInterval);
+}
 /**
  * Answers the most recent endDate.
  * @returns last {Date}
  */
 TimelineEvents.prototype.latestEndDate = function() {
-	var copy = this.list.slice();
-	copy.sort(function(a, b) {
-		return a.endDate < b.endDate
-	});
-	var omega = copy[0].endDate;
-	if (!omega) {
-		console.log(copy);
-	}
+	var l = this.listAll();
+	var omega = l[l.length - 1].endDate;
 	return omega;
 }
 
@@ -154,22 +166,16 @@ TimelineEvents.prototype.latestEndDate = function() {
  */
 TimelineEvents.prototype.hasDuration = function(lineArray) {
 	//TODO find TimelineEvent by fist non empty yPos and ask it for its duration
-	// calculate based on startDate / endDate - possibly after found via TimelineEvents
-	var arr = lineArray.slice();
-	var empty;
-	arr = removeElementFromArray(empty, arr);
-	var answer = (arr.length > 1);
-	return answer;
-
-	/** nested inner */
-	function removeElementFromArray(e, a) {
-		var answer = [];
-		var i;
-		for (i = 0; i < a.length; i++) {
-			if (a[i] !== e) {
-				answer.push(a[i]);
-			}
+	var p;
+	for (var l = 0; l < lineArray.length; l++) {
+		p = lineArray[l];
+		if (p) {
+			break;
 		}
-		return answer;
 	}
+	if (p) {
+		var tle = this.findByYPos(p);
+		return (tle.startDate.getTime() + ONE_DAY_IN_MS > tle.endDate.getTime());
+	}
+	return false;
 }
