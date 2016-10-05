@@ -18,24 +18,25 @@ function TimelineEvents() {
 TimelineEvents.prototype.init = function(json) {
 	var je,
 		tle,
-		p,
-		t,
-		parentCnt = 0;
+		parent;
 	for (var i = 0; i < json.events.length; i++) {
 		je = json.events[i];
-		p = tls.findParentById(je.parent);
-		tle = new TimelineEvent(je.id, p, je.startDateStr, je.endDateStr, je.colorStr, je.category);
+		parent = tls.findById(je.parent);
+		tle = new TimelineEvent(je.id, parent, je.startDateStr, je.endDateStr, je.colorStr, je.category);
 		// since we have only two generations we get along this way
-		if (p === null) {
-			parentCnt += 1;
-		} else {
-			p.children.push(tle);
+		if (parent) {
+			parent.children.push(tle);
 		}
-		tle.index = parentCnt;
 		this.list.push(tle);
 	}
 
 	this.list = this.sort(this.list);
+
+	var parentCnt = 0;
+	this.listParents().forEach(function(tle) {
+		parentCnt++;
+		tle.index = parentCnt;
+	})
 
 	this.listAll().forEach(function(tle) {
 		tle.initLine();
@@ -52,13 +53,11 @@ TimelineEvents.prototype.listParents = function() {
 	return this.sort(parents);
 }
 
-TimelineEvents.prototype.findParentById = function(parentId) {
-	var eid,
-		e;
+TimelineEvents.prototype.findById = function(id) {
+	var e;
 	for (var p = 0; p < this.list.length; p++) {
 		e = this.list[p];
-		eid = e.id;
-		if (parentId === eid) {
+		if (id === e.id) {
 			return e;
 		}
 	}
@@ -68,7 +67,6 @@ TimelineEvents.prototype.findParentById = function(parentId) {
 /**
  * Answers the label of the first match
  */
-//TODO rename to build
 TimelineEvents.prototype.findLabelByYPos = function(yPos) {
 	var e = this.findByYPos(yPos);
 	if (e) {
@@ -79,7 +77,6 @@ TimelineEvents.prototype.findLabelByYPos = function(yPos) {
 /**
  * Answers the first matching event.
  */
-//TODO rename to build
 TimelineEvents.prototype.findByYPos = function(yPos) {
 	for (var p = 0; p < this.list.length; p++) {
 		if (yPos === this.list[p].yPos) {
@@ -92,12 +89,7 @@ TimelineEvents.prototype.findByYPos = function(yPos) {
  * Answers the category of the first match
  */
 TimelineEvents.prototype.findCategoryById = function(id) {
-	for (var p = 0; p < this.list.length; p++) {
-		if (id === this.list[p].id) {
-			var answer = this.list[p].category;
-			return answer;
-		}
-	}
+	return this.findById(id).category;
 }
 
 /**
@@ -165,7 +157,7 @@ TimelineEvents.prototype.latestEndDate = function() {
  * @returns {boolean} true for timelines, false for dates
  */
 TimelineEvents.prototype.hasDuration = function(lineArray) {
-	//TODO find TimelineEvent by fist non empty yPos and ask it for its duration
+	//find TimelineEvent by fist non empty yPos
 	var p;
 	for (var l = 0; l < lineArray.length; l++) {
 		p = lineArray[l];
@@ -173,9 +165,10 @@ TimelineEvents.prototype.hasDuration = function(lineArray) {
 			break;
 		}
 	}
+	// answer if it has a duration
 	if (p) {
 		var tle = this.findByYPos(p);
-		return (tle.startDate.getTime() + ONE_DAY_IN_MS > tle.endDate.getTime());
+		return tle.hasDuration();
 	}
 	return false;
 }

@@ -19,9 +19,8 @@ QUnit.test("test number of events", function(assert) {
 
 QUnit.test("test number of parents", function(assert) {
 	setup();
-	var parentList = tls.listParents();
 	var expected = 4;
-	var observed = parentList.length
+	var observed = tls.listParents().length
 	assert.ok(expected == observed, msg(expected, observed));
 });
 
@@ -34,7 +33,7 @@ QUnit.test("test earliestStartDate", function(assert) {
 
 QUnit.test("test latestEndDate", function(assert) {
 	setup();
-	var expected = new Date("2017-05-07").getTime();
+	var expected = new Date("2017-05-06").getTime();
 	var observed = tls.latestEndDate().getTime();
 	assert.ok(expected === observed, msgDate(expected, observed));
 });
@@ -42,14 +41,14 @@ QUnit.test("test latestEndDate", function(assert) {
 // endDate[i] <= [endDate[i+1]
 QUnit.test("test parent sorting", function(assert) {
 	setup();
-	var parentList = tls.listParents();
+	var l = tls.listParents();
 	var lastDT = 0;
 	var currentDT;
 	var e;
-	for (var p = 0; p < parentList.length; p++) {
-		e = parentList[p];
+	for (var p = 0; p < l.length; p++) {
+		e = l[p];
 		currentDT = e.endDate.getTime();
-		assert.ok(lastDT < currentDT, "last endDate < current endDate: " + e.id + " " + timeToString(lastDT) + "/" + timeToString(currentDT) );
+		assert.ok(lastDT < currentDT, "last endDate < current endDate: " + e.id + " " + timeToString(lastDT) + "/" + timeToString(currentDT));
 		lastDT = currentDT;
 	}
 });
@@ -63,7 +62,7 @@ QUnit.test("test event sorting", function(assert) {
 	for (var p = 0; p < l.length; p++) {
 		e = l[p];
 		currentDT = e.endDate.getTime();
-		assert.ok(lastDT < currentDT, "last endDate < current endDate: " + e.id + " " + timeToString(lastDT) + "/" + timeToString(currentDT) );
+		assert.ok(lastDT <= currentDT, "last endDate <= current endDate: " + e.id + " " + timeToString(lastDT) + "/" + timeToString(currentDT));
 		lastDT = currentDT;
 	}
 });
@@ -76,27 +75,101 @@ QUnit.test("test event index", function(assert) {
 	var e;
 	for (var p = 0; p < l.length; p++) {
 		e = l[p];
-		currentIdx = e.index;
-		assert.ok(lastIdx <= currentIdx, "last index <= current index: " + e.id + " " + lastIdx + "/" + currentIdx );
+		currentIdx = e.getIndex();
+		assert.ok(lastIdx <= currentIdx, "last index <= current index: " + e.id + " " + lastIdx + "/" + currentIdx);
 		lastIdx = currentIdx;
 	}
 });
 
 
-// tls.findParentById(id);
+QUnit.test("test number of children", function(assert) {
+	setup();
+	var l = tls.listAll();
+	var parent,
+		expected,
+		observed;
+	//
+	parent = tls.findById("Release 2.12");
+	expected = 2;
+	observed = parent.children.length;
+	assert.ok(expected == observed, msg(expected, observed));
+	//
+	parent = tls.findById("Release 3.3");
+	expected = 0;
+	observed = parent.children.length;
+	assert.ok(expected == observed, msg(expected, observed));
+	//
+	parent = tls.findById("Release 3.4");
+	expected = 0;
+	observed = parent.children.length;
+	assert.ok(expected == observed, msg(expected, observed));
+	//
+	parent = tls.findById("Release 3.5");
+	expected = 2;
+	observed = parent.children.length;
+	assert.ok(expected == observed, msg(expected, observed));
+});
+
+QUnit.test("test yPos", function(assert) {
+	// children must have the same yPos as their parent
+	setup();
+	var l = tls.listAll();
+	var e,
+		c,
+		kids;
+	for (var p = 0; p < l.length; p++) {
+		e = l[p];
+		if (!e.parent) {
+			kids = e.children;
+			for (c = 0; c < kids.length; c++) {
+				assert.ok(e.yPos === kids[c].yPos, "parent: " + e.id + " child: " + kids[c].id);
+			}
+		}
+	}
+});
+
+QUnit.test("test hasDuration", function(assert) {
+	setup();
+	var l = tls.listAll();
+	var e;
+	for (var p = 0; p < l.length; p++) {
+		e = l[p];
+		if (!e) {
+			alert();
+		}
+		if (e.id === "GoLive") {
+			assert.ok(e.hasDuration() === false, "startDate: " + e.startDate.toDateString() + " endDate: " + e.endDate.toDateString());
+		} else {
+			assert.ok(e.hasDuration() === true, "startDate: " + e.startDate.toDateString() + " endDate: " + e.endDate.toDateString());
+		}
+	}
+});
+
+QUnit.test("test invalid dates", function(assert) {
+	var invalidData = '{"events" : [' +
+		'{ "id":"Invalid", "startDateStr":"", "endDateStr":"", "colorStr":"","category":"" }' +
+		']}';
+	tls = new TimelineEvents();
+	try {
+		tls.init(JSON.parse(invalidData));
+	} catch (err) {
+		assert.ok(err.message === "Invalid Date", invalidData);
+	} finally {
+		var l = tls.listAll();
+		assert.ok(l.length === 0, "no valid events");
+	}
+});
 // tls.findLabelByYPos(yPos);
 // tls.findCategoryById(id);
 // tls.initScale();
-// tls.hasDuration()
 
 function setup() {
 	// the global var tls is referenced in the implementation
 	tls = new TimelineEvents();
 	tls.init(JSON.parse(data));
 }
-
 function msg(expected, observed) {
-	return("expected: " + expected + " observed: " + observed);
+	return ("expected: " + expected + " observed: " + observed);
 }
 function msgDate(expected, observed) {
 	return msg(timeToString(expected), timeToString(observed));

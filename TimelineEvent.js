@@ -7,8 +7,9 @@ function TimelineEvent(id, parent, startDateStr, endDateStr, colorStr, category)
 }
 
 TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, colorStr, category) {
-	this.id = id || "id not set"; // aka title, name
+	this.id = id || "id not set"; // AKA title, name
 	this.parent = parent;
+	this.children = [];
 	initDates(this, startDateStr, endDateStr);
 	this.color = initColor(colorStr) || api_defaultColor;
 	this.category = category || "NONE";
@@ -19,33 +20,28 @@ TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, co
 	 * and that they differ at least by 1 day.
 	 */
 	function initDates(o, s, e) {
-		o.startDate = new Date(s);
-		if (!e) {
-			e = s;
+		if (s) {
+			o.startDate = new Date(s);
+		} else {
+			o.startDate = new Date(e);
 		}
-		o.endDate = new Date(e);
-		if (hasInvalidDates(o)) {
-			if (!o.endDate) {
-				o.endDate = new Date(o.startDate.getTime() + ONE_DAY_IN_MS);
-			}
-			if (!o.startDate) {
-				o.startDate = new Date(o.endDate.getTime() - ONE_DAY_IN_MS);
-			}
-			if (o.startDate.getTime() === o.endDate.getTime()) {
-				o.endDate = new Date(o.startDate.getTime() + ONE_DAY_IN_MS);
-			}
+		if (e) {
+			o.endDate = new Date(e);
+		} else {
+			o.endDate = new Date(s);
 		}
 
-		/** inner nested
-		 * if neither startDate nor endDate is set, or both dates are equal the event is invalid
-		 */
-		function hasInvalidDates(o) {
-			return !o.startDate || !o.endDate || (o.startDate.getTime() === o.endDate.getTime())
+		if (!isValid(o.startDate) || !isValid(o.endDate)) {
+			throw new Error("Invalid Date");
+		}
+
+		function isValid(date) {
+			return !isNaN(date.getTime());
 		}
 	}
 
 	/**
-	 * Turn hex color string into js Color object.
+	 * Turn hex color string into Color object.
 	 */
 	function initColor(colorStr) {
 		if (colorStr) {
@@ -65,14 +61,21 @@ TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, co
 	}
 }
 
+TimelineEvent.prototype.getIndex = function() {
+	var i = this.index;
+	if (!i) {
+		i = this.parent.index;
+	}
+	return i;
+}
+
 TimelineEvent.prototype.initLine = function() {
 	this.line = [];
-	var empty;
 	var d = new Date(tls.earliestStartDate());
-	this.yPos = api_timelineOffset - (this.index * api_timelineHeight);
+	this.yPos = api_timelineOffset - (this.getIndex() * api_timelineHeight);
 	while (d < this.endDate) {
 		if (d < this.startDate) {
-			this.line.push(empty);
+			this.line.push(undefined);
 		} else {
 			this.line.push(this.yPos);
 		}
@@ -83,4 +86,8 @@ TimelineEvent.prototype.initLine = function() {
 TimelineEvent.prototype.label = function() {
 	var l = this.id + "\n[ " + this.startDate.toDateString() + "..." + this.endDate.toDateString() + " ]";
 	return l;
+}
+
+TimelineEvent.prototype.hasDuration = function() {
+	return this.endDate.getTime() > this.startDate.getTime();
 }

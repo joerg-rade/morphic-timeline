@@ -5,20 +5,22 @@
 <meta name="viewport" content="width=device-width">
 <title>QUnit Tests</title>
 <link rel="stylesheet" href="qunit-2.0.1.css">
-<script type="text/javascript" src="morphic.js"></script>
-<script type="text/javascript" src="TimelineEvents.js"></script>
-<script type="text/javascript" src="TimelineEvent.js"></script>
 </head>
 <body>
-	<div id="qunit"></div>
-	<div id="qunit-fixture"></div>
-	<script src="qunit-2.0.1.js"></script>
-	<script src="TimelineEventsTests.js"></script>
+	<script type="text/javascript" src="morphic.js"></script>
+	<script type="text/javascript" src="qunit-2.0.1.js"></script>
+	<script type="text/javascript" src="jquery-3.1.1.min.js"></script>
+	<script type="text/javascript" src="blanket-1.2.2.min.js" data-cover-flags="debug"></script>
+	<script type="text/javascript" src="TimelineEvents.js" data-cover></script>
+	<script type="text/javascript" src="TimelineEvent.js" data-cover></script>
+	<script type="text/javascript" src="TimelineEventsTests.js"></script>
 	<script type="text/javascript">
 		var tls;
 		var api_defaultColor = new Color(255, 0, 0);
 		var api_timelineOffset = 180; // offset for the tl bars
 		var api_timelineHeight = 15; // Bar height
 	</script>
+	<div id="qunit"></div>
+	<div id="qunit-fixture"></div>
 </body>
 </html>
