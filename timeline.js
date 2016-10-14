@@ -285,22 +285,21 @@ LineMorph.prototype.rider = function() {
 		return this.children[0];
 	}
 	lbl = new TextMorph(
-		'a\nb',
-		api_fontSize,
-		api_fontStyle,
+		null,
+		this.api_fontSize,
+		this.api_fontStyle,
 		false,
 		false,
 		null, //alignment,
 		0, // width,
-		api_fontName,
+		this.api_fontName,
 		new Point(-1, -1),
-		this.color.darker(50)
+		this.api_textColor //
 	);
-	lbl.setColor(api_textColor);
 
 	rider = new BoxMorph(lbl.height() / 2);
-	rider.border = 1;
-	rider.setExtent(lbl.extent().add(rider.border + 4));
+	rider.border = 0;
+	//	rider.setExtent(lbl.extent().add(rider.border + 4));
 	rider.drawNew = TimelineMorph.prototype.drawGradient;
 	rider.label = function() {
 		return lbl;
@@ -374,10 +373,11 @@ LineMorph.prototype.startStepping = function() {
 	var myself = this;
 	this.rider().show();
 	this.step = function() {
+		//TODO this is how CursorPos can be computed - use to pop rider only for x/y match
 		var pos = myself.world().hand.position(),
 			value = this.valueAt(pos.x - this.left()),
 			rider = this.rider(),
-			label = tls.findLabelByYPos(value);
+			label = tls.findByLine(this.values).label();
 		if (label) {
 			rider.label().setText(label);
 		}
@@ -415,10 +415,10 @@ LineMorph.prototype.toggleCategory = function(lm, show) {
 	var sibblings = lm.parent.children;
 	sibblings.forEach(function(c) {
 		if (c.label === cat) {
-			if(show) {
+			if (show) {
 				c.show();
 			} else {
-			 	c.hide();
+				c.hide();
 			}
 		}
 	});
@@ -468,7 +468,7 @@ TimelineMorph.prototype.buildParts = function() {
 
 	// Part 1 / checkboxes at the top
 	this.header = new Morph();
-	this.header.setColor(api_backColor);
+	this.header.setColor("white"); //TODO how can Color object be used?
 	this.header.setTop(10);
 	this.header.setLeft(10);
 	this.header.drawNew();
@@ -492,21 +492,33 @@ TimelineMorph.prototype.buildParts = function() {
 			);
 			tm.color = c.color;
 			tm.drawNew();
-			tm.label.setColor(api_textColor);
-			tm.label.setFontSize(api_fontSize);
-//			myself.header.add(tm);
-			myself.addToggleToHeader(tm, myself.header);
+			// for more tm.attributes see widgets.js:98:PushButtonMorph preferences settings
+			//myself.addToggleToHeader(tm, myself.header);
 			//TODO advance only the position if a new unique category is added
-			if (last) {
-				tm.setPosition(last.fullBounds().topRight().add(
-					new Point(myself.padding, 0)
-				));
-			} else {
-				tm.setPosition(
+			if (!isIncluded(tm, myself.header)) {
+				myself.header.add(tm);
+				if (last) {
+					tm.setPosition(last.fullBounds().topRight().add(
+						new Point(myself.padding, 0)
+					));
+				} else {
+					tm.setPosition(
 						myself.header.position().add(myself.padding)
 					);
+				}
+				last = tm;
 			}
-			last = tm;
+		}
+
+		function isIncluded(newToggleMorph, header) {
+			var newLabel = newToggleMorph.label.text; // ^= event.id
+			var isIncluded = false;
+			header.children.forEach(function(t) {
+				if (t.label.text === newLabel) {
+					isIncluded = true;
+				}
+			});
+			return isIncluded;
 		}
 	});
 
@@ -535,15 +547,7 @@ TimelineMorph.prototype.buildParts = function() {
 };
 
 TimelineMorph.prototype.addToggleToHeader = function(newToggleMorph, header) {
-	var id = newToggleMorph.label.text;
-	var cat = tls.findCategoryById(id);
-	var isIncluded = false;
-	header.children.forEach(function(t) {
-		if (t.label.text === cat) {
-			isIncluded = true;
-		}
-	});
-	if (! isIncluded) {
+	if (!this.isIncluded(newToggleMorph, header)) {
 		header.add(newToggleMorph);
 	}
 }

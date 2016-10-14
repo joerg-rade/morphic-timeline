@@ -65,34 +65,6 @@ TimelineEvents.prototype.findById = function(id) {
 }
 
 /**
- * Answers the label of the first match
- */
-TimelineEvents.prototype.findLabelByYPos = function(yPos) {
-	var e = this.findByYPos(yPos);
-	if (e) {
-		return e.label();
-	}
-}
-
-/**
- * Answers the first matching event.
- */
-TimelineEvents.prototype.findByYPos = function(yPos) {
-	for (var p = 0; p < this.list.length; p++) {
-		if (yPos === this.list[p].yPos) {
-			return this.list[p];
-		}
-	}
-}
-
-/**
- * Answers the category of the first match
- */
-TimelineEvents.prototype.findCategoryById = function(id) {
-	return this.findById(id).category;
-}
-
-/**
 * Initializes scale label and data,
 * starting with earliest startDate (alpha) and
 * ending at latest endDate (omega).
@@ -110,7 +82,7 @@ TimelineEvents.prototype.initScale = function() {
 }
 
 /**
- * Sort list by startDate .
+ * Sort list by startDate.
  * @returns sorted Array
  */
 TimelineEvents.prototype.sort = function(list) {
@@ -157,18 +129,29 @@ TimelineEvents.prototype.latestEndDate = function() {
  * @returns {boolean} true for timelines, false for dates
  */
 TimelineEvents.prototype.hasDuration = function(lineArray) {
-	//find TimelineEvent by fist non empty yPos
-	var p;
-	for (var l = 0; l < lineArray.length; l++) {
-		p = lineArray[l];
-		if (p) {
-			break;
+	//find TimelineEvent with the identical lineArray
+	var tle = this.findByLine(lineArray);
+	return tle.hasDuration();
+}
+
+/**
+ * Answers the first matching event.
+ */
+TimelineEvents.prototype.findByLine = function(lineArray) {
+	for (var p = 0; p < this.list.length; p++) {
+		if (lineArray === this.list[p].line) {
+			return this.list[p];
 		}
 	}
-	// answer if it has a duration
-	if (p) {
-		var tle = this.findByYPos(p);
-		return tle.hasDuration();
+}
+
+TimelineEvents.prototype.isNewCategory = function(event) {
+	var cat = event.category,
+		pos = event.index;
+	for (var p = 0; p < pos; p++) {
+		if (cat === this.list[p].category) {
+			return false;
+		}
 	}
-	return false;
+	return true;
 }

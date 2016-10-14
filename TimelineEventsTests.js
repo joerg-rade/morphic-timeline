@@ -1,4 +1,3 @@
-// given
 var data = '{"events" : [' +
 	'{ "id":"Release 2.12", "startDateStr":"2016-06-15", "endDateStr":"2016-11-23", "colorStr":"#6A5ACD","category":"" }' +
 	',{ "id":"Test", "startDateStr":"2016-10-01", "endDateStr":"2016-11-15", "colorStr":"#00FF00", "parent":"Release 2.12", "category":"1" }' +
@@ -33,12 +32,12 @@ QUnit.test("test earliestStartDate", function(assert) {
 
 QUnit.test("test latestEndDate", function(assert) {
 	setup();
-	var expected = new Date("2017-05-06").getTime();
+//	var expected = new Date("2017-05-06").getTime(); due to one day offset
+	var expected = new Date("2017-05-07").getTime();
 	var observed = tls.latestEndDate().getTime();
 	assert.ok(expected === observed, msgDate(expected, observed));
 });
 
-// endDate[i] <= [endDate[i+1]
 QUnit.test("test parent sorting", function(assert) {
 	setup();
 	var l = tls.listParents();
@@ -81,7 +80,6 @@ QUnit.test("test event index", function(assert) {
 	}
 });
 
-
 QUnit.test("test number of children", function(assert) {
 	setup();
 	var l = tls.listAll();
@@ -111,7 +109,7 @@ QUnit.test("test number of children", function(assert) {
 });
 
 QUnit.test("test yPos", function(assert) {
-	// children must have the same yPos as their parent
+	// children must not have the same yPos as their parent
 	setup();
 	var l = tls.listAll();
 	var e,
@@ -122,7 +120,7 @@ QUnit.test("test yPos", function(assert) {
 		if (!e.parent) {
 			kids = e.children;
 			for (c = 0; c < kids.length; c++) {
-				assert.ok(e.yPos === kids[c].yPos, "parent: " + e.id + " child: " + kids[c].id);
+				assert.ok(e.yPos > kids[c].yPos, "parent: " + e.id + " child: " + kids[c].id);
 			}
 		}
 	}
@@ -159,9 +157,22 @@ QUnit.test("test invalid dates", function(assert) {
 		assert.ok(l.length === 0, "no valid events");
 	}
 });
-// tls.findLabelByYPos(yPos);
-// tls.findCategoryById(id);
+
+QUnit.test("test findById/Line", function(assert) {
+	setup();
+	var l = tls.listAll();
+	var id = "GoLive";
+	var expected = tls.findById(id); // first match wins!
+	var parent = expected.parent;
+	assert.ok(expected.getIndex() === parent.getIndex(), "event: " + expected.id + " parent: " + parent.id);
+	var line = expected.line;
+	var observed = tls.findByLine(line);
+	assert.ok(observed.id === id, "id: " + id + " label: " + observed.label + " lineArray: " + line);
+	assert.ok(!tls.hasDuration(line), event);
+});
+
 // tls.initScale();
+// tls.span();
 
 function setup() {
 	// the global var tls is referenced in the implementation

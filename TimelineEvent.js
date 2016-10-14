@@ -30,13 +30,22 @@ TimelineEvent.prototype.init = function(id, parent, startDateStr, endDateStr, co
 		} else {
 			o.endDate = new Date(s);
 		}
+		addADayToCopeWithLineDrawing();
 
-		if (!isValid(o.startDate) || !isValid(o.endDate)) {
+		if (isInvalid(o.startDate) || isInvalid(o.endDate)) {
 			throw new Error("Invalid Date");
 		}
 
-		function isValid(date) {
-			return !isNaN(date.getTime());
+		// @deprecated use Pen/logo style drawing instead
+		function addADayToCopeWithLineDrawing() {
+			var alpha = o.startDate.getTime();
+			var omega = o.endDate.getTime();
+			if (omega - alpha < ONE_DAY_IN_MS) {
+				o.endDate = new Date(alpha + ONE_DAY_IN_MS);
+			}
+		}
+		function isInvalid(date) {
+			return isNaN(date.getTime());
 		}
 	}
 
@@ -69,10 +78,17 @@ TimelineEvent.prototype.getIndex = function() {
 	return i;
 }
 
+/**
+ * @deprecated line drawing should use Pen/Logo style (origin, corner) instead
+ */
 TimelineEvent.prototype.initLine = function() {
 	this.line = [];
 	var d = new Date(tls.earliestStartDate());
-	this.yPos = api_timelineOffset - (this.getIndex() * api_timelineHeight);
+	this.yPos = api_timelineOffset - (this.getIndex() * api_timelineHeight * 1.5);
+	// put kids in the second line
+	if (this.parent) {
+		this.yPos = this.yPos - (api_timelineHeight / 2);
+	}
 	while (d < this.endDate) {
 		if (d < this.startDate) {
 			this.line.push(undefined);
@@ -81,6 +97,7 @@ TimelineEvent.prototype.initLine = function() {
 		}
 		d.setDate(d.getDate() + 1);
 	}
+	this.line.push(this.yPos);
 }
 
 TimelineEvent.prototype.label = function() {
@@ -89,5 +106,7 @@ TimelineEvent.prototype.label = function() {
 }
 
 TimelineEvent.prototype.hasDuration = function() {
-	return this.endDate.getTime() > this.startDate.getTime();
+	var alpha = this.startDate.getTime();
+	var omega = this.endDate.getTime();
+	return ((omega - alpha) > ONE_DAY_IN_MS + 1);
 }
