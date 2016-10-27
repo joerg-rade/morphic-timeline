@@ -1,106 +1,88 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Morphic Timeline</title>
-		<script type="text/javascript" src="morphic.js"></script>
-		<script type="text/javascript" src="widgets.js"></script>
-		<script type="text/javascript" src="timeline.js"></script>
-		<script type="text/javascript" src="TimelineEvents.js"></script>
-		<script type="text/javascript" src="TimelineEvent.js"></script>
-		<script type="text/javascript">
-		//TODOs
-		// how can the world scale to 100%, take the available area?
+<head>
+<title>Morphic Timeline</title>
+<script type="text/javascript" src="morphic.js"></script>
+<script type="text/javascript" src="widgets.js"></script>
+<script type="text/javascript" src="timeline.js"></script>
+<script type="text/javascript" src="TimelineEvents.js"></script>
+<script type="text/javascript" src="TimelineEvent.js"></script>
+<script type="text/javascript">
 
-		// checkboxes flat instead of 3d
-		// use passed in links / hours instead of y values for popup's
-		// scale x-axis according to passed in Time scale, days, months, etc.
+	/**
+		 * styling (css like) and dimensional parameters
+		 */
+	var api_fontSize = 15;
+	//TODO is fontName and fontStyle the same?
+	var api_fontStyle = 'sans-serif'; //'1px serif' 'monospaced' 'sans-serif'
+	var api_fontName = 'sans-serif'; //'1px serif' 'monospaced' 'sans-serif'
+	var api_backColor = new Color(255, 255, 255); //white
+	var api_textColor = new Color(0, 0, 0); //black;
+	var api_defaultColor = new Color(255, 0, 0); //red
+	var api_hooverColor = new Color(255, 246, 176); // FFE6B0, FFD800(255, 216, 0)
+	var api_enableResize = false;
+	var api_width = 800;
+	var api_height = 600;
+	var api_inset = 10;
+	var api_scrollBarHeight = 60; // horizontal
+	var api_timelineHeight = 15; // Bar height
+	var api_timelineOffset = 200; // offset for the tl bars
+	var api_dateHeight = 7; // extent of the date marker
+	var api_dateLineWidth = 1; // border of the date marker
+	var api_padding = 0;
+	var api_xInterval = 30; //density of the vertical lines 1=daily 7=weekly, 30~monthly
+	//TODO use enumeration and algorithmic calculation
+	// intra/subday events not handled yet
 
-		// avoid v-scrollbar and use default 'scale'
-		// have h-scrollbar as birds eye view
-		// - assign thumbnail of complete graph
-		// - set focus either on actual date or one passed in
-		// - hScroll without roundings -> HandleMorph square?
+	/** (sample) event data */
+	// Parents have to be defined before children
+	// Events w/o enddate are set to a 1 day duration and rendered as 'salino'
+	// if color is not set defaultColor (red/FF0000) will be used
+	var data = '{"events" : [' +
+		'{ "id":"Release 2.12", "startDateStr":"2016-06-15", "endDateStr":"2016-11-23", "colorStr":"#6A5ACD"}' +
+		',{ "id":"Test", "startDateStr":"2016-10-01", "endDateStr":"2016-11-15", "colorStr":"#00FF00", "parent":"Release 2.12"}' +
+		',{ "id":"GoLive", "startDateStr":"2016-11-23", "parent":"Release 2.12"}' +
+		',{ "id":"Release 3.3", "startDateStr":"2016-04-11", "endDateStr":"2016-09-05", "colorStr":"#87CEEB"}' +
+		',{ "id":"Release 3.4", "startDateStr":"2016-07-01", "endDateStr":"2016-12-31", "colorStr":"#87CEEB"}' +
+		',{ "id":"Release 3.5", "startDateStr":"2016-10-01", "endDateStr":"2017-05-06", "colorStr":"#87CEEB"}' +
+		',{ "id":"Test", "startDateStr":"2017-01-10", "endDateStr":"2017-04-15", "colorStr":"#00FF00", "parent":"Release 3.5"}' +
+		',{ "id":"GoLive", "startDateStr":"2017-05-06", "parent":"Release 3.5"}' +
+		']}';
 
-		// allow for milestones <> without duration, currently 1 day
+	/** global vars */
+	var tls;
+	var eventList = [];
+	var scaleLabels = [];
+	var scaleData = [];
 
-		// checkboxes should show/hide categories, not events. Categories = color?
+	var world,
+		timeline,
+		root;
 
-		// use gradient to have a border around horizontal bars? -> LineMorph.prototype.linePath
+	window.onload = function() {
+		world = new WorldMorph(document.getElementById('world'));
+		world.setColor(api_backColor);
+		tls = new TimelineEvents();
+		tls.init(JSON.parse(data));
+		eventList = tls.listAll();
+		tls.initScale();
+		timeline = new TimelineMorph();
+		timeline.useFillPage = true;
+		timeline.setPosition(new Point(0, 0));
+		world.add(timeline);
+		setInterval(loop, 1);
+	};
 
-		// LineMorph.prototype.startStepping -> use world.hand.postion() for rider popup!
+	function loop() {
+		world.doOneCycle();
+	}
+</script>
+</head>
 
-		// see: widgets.js, PushButtonMorph preferences settings for styling of ToggleMorph
-
-			/**
-			 * styling (css like) and dimensional parameters
-			 */
-			var api_fontSize = 15;
-			//TODO is fontName and fontStyle the same?
-			var api_fontStyle = 'sans-serif'; //'1px serif' 'monospaced' 'sans-serif'
-			var api_fontName = 'sans-serif'; //'1px serif' 'monospaced' 'sans-serif'
-			var api_backColor = new Color(255, 255, 255); //white
-			var api_textColor = new Color(0, 0, 0); //black;
-			var api_defaultColor = new Color(255, 0, 0); //red
-			var api_enableResize = false;
-			var api_width = 800;
-			var api_height = 600;
-			var api_scrollBarHeight = 40; // horizontal
-			var api_timelineHeight = 15; // Bar height
-			var api_timelineOffset = 200; // offset for the tl bars
-			var api_dateHeight = 7; // extent of the date marker
-			var api_dateLineWidth = 1; // border of the date marker
-			var api_padding = 0;
-			var api_xInterval = 30; //density of the vertical lines 1=daily 7=weekly, 30~monthly
-			//TODO use enumeration and algorithmic calculation
-			// intra/subday events not handled yet
-
-			/** (sample) event data */
-			// Parents have to be defined before children
-			// Events w/o enddate are set to a 1 day duration and rendered as 'salino'
-			// if color is not set defaultColor (red/FF0000) will be used
-			var data = '{"events" : [' +
-'{ "id":"Release 2.12", "startDateStr":"2016-06-15", "endDateStr":"2016-11-23", "colorStr":"#6A5ACD","category":"" }' +
-',{ "id":"Test", "startDateStr":"2016-10-01", "endDateStr":"2016-11-15", "colorStr":"#00FF00", "parent":"Release 2.12", "category":"1" }' +
-',{ "id":"GoLive", "startDateStr":"2016-11-23", "parent":"Release 2.12","category":"2" }' +
-',{ "id":"Release 3.3", "startDateStr":"2016-04-11", "endDateStr":"2016-09-05", "colorStr":"#87CEEB","category":"" }' +
-',{ "id":"Release 3.4", "startDateStr":"2016-07-01", "endDateStr":"2016-12-31", "colorStr":"#87CEEB","category":"" }' +
-',{ "id":"Release 3.5", "startDateStr":"2016-10-01", "endDateStr":"2017-05-06", "colorStr":"#87CEEB","category":"" }' +
-',{ "id":"Test", "startDateStr":"2017-01-10", "endDateStr":"2017-04-15", "colorStr":"#00FF00", "parent":"Release 3.5", "category":"1" }' +
-',{ "id":"GoLive", "startDateStr":"2017-05-06", "parent":"Release 3.5", "category":"2" }' +
-']}';
-
-			/** global vars */
-			var tls;
-			var eventList = [];
-			var scaleLabels = [];
-			var scaleData = [];
-
-			var	world, timeline, root;
-
-			window.onload = function () {
-				world = new WorldMorph(document.getElementById('world'));
-				world.setColor(api_backColor);
-				tls = new TimelineEvents();
-				tls.init(JSON.parse(data));
-				eventList = tls.listAll();
-				tls.initScale();
-				timeline = new TimelineMorph();
-				timeline.useFillPage = true;
-				timeline.setPosition(new Point(0, 0));
-				world.add(timeline);
-				setInterval(loop, 1);
-			};
-
-			function loop() {
-				world.doOneCycle();
-			}
-
-		</script>
-	</head>
-
-	<body>
-		<canvas id="world" tabindex="1" width="100%" height="100%" style="position: absolute;">
+<body>
+	<canvas id="world" tabindex="1" width="100%" height="100%"
+		style="position: absolute;">
 			Your browser doesn't support canvas.
 		</canvas>
-	</body>
+</body>
 </html>

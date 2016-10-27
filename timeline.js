@@ -216,9 +216,15 @@ GridMorph.prototype.createLabels = function() {
 };
 
 GridMorph.prototype.mouseEnter = function() {
+	//	var event,
+	//		pos;
 	this.children.forEach(function(child) {
 		if (child instanceof LineMorph) {
+			//			event = tls.findByLine(child.values);
+			//			pos = myself.world().hand.position();
+			//			if ((event.yPos - pos.y) < 1) {
 			child.startStepping();
+		//			}
 		}
 	});
 };
@@ -247,7 +253,7 @@ function LineMorph(label, x, y, values, color, isFilled) {
 LineMorph.prototype.init = function(label, x, y, values, color, isFilled) {
 	// additional attributes:
 	// checkBox label
-	this.label = label || 'not set in data';
+	this.label = label || 'label not set';
 	this.xUnits = x || (x === 0 ? 0 : 5);
 	this.yUnits = y || (y === 0 ? 0 : 200);
 	this.values = values || [];
@@ -278,13 +284,10 @@ LineMorph.prototype.valueAt = function(x) {
 };
 
 LineMorph.prototype.rider = function() {
-	// Rider = value hoover
-	var rider,
-		lbl;
 	if (this.children[0]) {
 		return this.children[0];
 	}
-	lbl = new TextMorph(
+	var lbl = new TextMorph(
 		null,
 		this.api_fontSize,
 		this.api_fontStyle,
@@ -297,10 +300,11 @@ LineMorph.prototype.rider = function() {
 		this.api_textColor //
 	);
 
-	rider = new BoxMorph(lbl.height() / 2);
-	rider.border = 0;
-	//	rider.setExtent(lbl.extent().add(rider.border + 4));
-	rider.drawNew = TimelineMorph.prototype.drawGradient;
+	var rider = new BoxMorph(0, 1, null);
+	rider.color = api_hooverColor;
+	rider.image.getContext('2d').stroke();
+	var point = new Point(this.image.width * 5, this.image.height);
+	rider.setExtent(point);
 	rider.label = function() {
 		return lbl;
 	};
@@ -310,10 +314,7 @@ LineMorph.prototype.rider = function() {
 };
 
 LineMorph.prototype.drawNew = function() {
-	// initialize my surface property
-	var context,
-		rider;
-
+	var context;
 	this.image = newCanvas(this.extent());
 	context = this.image.getContext('2d');
 	context.strokeStyle = this.color.toString();
@@ -322,17 +323,15 @@ LineMorph.prototype.drawNew = function() {
 	this.linePath(context);
 	context.stroke();
 
-	rider = this.rider();
-	rider.drawNew();
-	rider.hide();
+	this.rider().drawNew();
+	this.rider().hide();
 };
 
 LineMorph.prototype.linePath = function(context) {
 	var i,
 		x,
-		y;
-
-	var drawLine = tls.hasDuration(this.values);
+		y,
+		drawLine = tls.hasDuration(this.values);
 	for (i = 0; i < this.values.length; i += 1) {
 		if (this.values[0] !== null) {
 			x = i * (this.width() / this.xUnits);
@@ -349,9 +348,7 @@ LineMorph.prototype.linePath = function(context) {
 		}
 	}
 
-	/** nested inner
-	 * draw a 'salino' for events without duration
-	 */
+	// draw a 'salino' for events without duration
 	function drawMilestone() {
 		var r = api_dateHeight;
 		context.lineWidth = api_dateLineWidth;
@@ -364,20 +361,15 @@ LineMorph.prototype.linePath = function(context) {
 	}
 };
 
-LineMorph.prototype.fill = function() {
-	// Fills area below the lines with halftones, 0.2
-	//TODO usable for border?
-};
-
 LineMorph.prototype.startStepping = function() {
 	var myself = this;
-	this.rider().show();
 	this.step = function() {
-		//TODO this is how CursorPos can be computed - use to pop rider only for x/y match
+		//FIXME - pop up rider only for exact x/y match
 		var pos = myself.world().hand.position(),
 			value = this.valueAt(pos.x - this.left()),
 			rider = this.rider(),
-			label = tls.findByLine(this.values).label();
+			event = tls.findByLine(this.values),
+			label = event.label();
 		if (label) {
 			rider.label().setText(label);
 		}
@@ -386,7 +378,9 @@ LineMorph.prototype.startStepping = function() {
 			pos.x,
 			myself.lineY(value)
 		));
-		rider.show();
+		if ((event.yPos - pos.y) < 1) {
+			rider.show();
+		}
 	};
 };
 
@@ -425,7 +419,7 @@ LineMorph.prototype.toggleCategory = function(lm, show) {
 };
 
 // TimelineMorph //////////////////////////////////////////////////////////
-// TimelineMorph inherits from BoxMorph: // AlignmentMorph
+// TimelineMorph inherits from BoxMorph
 TimelineMorph.prototype = new BoxMorph();
 TimelineMorph.prototype.constructor = BoxMorph;
 TimelineMorph.uber = BoxMorph.prototype;
@@ -469,14 +463,15 @@ TimelineMorph.prototype.buildParts = function() {
 	// Part 1 / checkboxes at the top
 	this.header = new Morph();
 	this.header.setColor("white"); //TODO how can Color object be used?
-	this.header.setTop(10);
-	this.header.setLeft(10);
+	this.header.setTop(api_inset);
+	this.header.setLeft(api_inset);
 	this.header.drawNew();
 	this.add(this.header);
 
 	// Part 5 / bottom
 	this.legend = new Morph();
-	this.add(this.legend);
+	this.legend.setExtent(new Point(api_width, api_scrollBarHeight));
+	//	this.add(this.legend);
 
 	// Part 2 / center/data - changes legend
 	this.contents.children.forEach(function(c) {
@@ -494,7 +489,7 @@ TimelineMorph.prototype.buildParts = function() {
 			tm.drawNew();
 			// for more tm.attributes see widgets.js:98:PushButtonMorph preferences settings
 			//myself.addToggleToHeader(tm, myself.header);
-			//TODO advance only the position if a new unique category is added
+			// advance the position only if a new unique label is added
 			if (!isIncluded(tm, myself.header)) {
 				myself.header.add(tm);
 				if (last) {
@@ -554,15 +549,12 @@ TimelineMorph.prototype.addToggleToHeader = function(newToggleMorph, header) {
 
 TimelineMorph.prototype.fixLayout = function() {
 	var grid = this.contents,
-		inset,
-		i,
-		y,
-		myself = this;
+		inset;
 
 	if (this.legend) {
 		this.legend.setExtent(new Point(
 			this.width() - this.border,
-			this.padding * 2 + 15
+			this.padding * 2
 		));
 		this.legend.setBottom(
 			this.bottom() - this.border - this.edge - this.padding
@@ -575,9 +567,9 @@ TimelineMorph.prototype.fixLayout = function() {
 			null,
 			false,
 			false
-		).width() + this.border + 3 + this.padding;
+		).width() + this.border;
 		this.frame.silentSetPosition(new Point(
-			this.left() /* + inset */ ,
+			this.left() + api_inset, //inset ,
 			this.header.bottom() + this.border + this.padding
 		));
 		this.frame.bounds.corner = this.legend.topRight().subtract(new Point(
@@ -587,20 +579,10 @@ TimelineMorph.prototype.fixLayout = function() {
 		this.frame.drawNew();
 		this.contents.setExtent(new Point(
 			this.frame.width(),
-			this.frame.height() - 40 // distance h-Scroll to graph
+			this.frame.height() - api_scrollBarHeight // distance h-Scroll to graph
 		));
 		this.frame.adjustScrollBars();
 
-		// position y-axis labels:
-		this.children.forEach(function(m) {
-			if (m.isYLabel) {
-				i = parseFloat(m.text);
-				y = grid.height() - (i * (grid.height() / grid.yUnits))
-				+ grid.top();
-				m.setCenter(new Point(0, y));
-				m.setRight(myself.frame.left() - 2);
-			}
-		});
 	}
 	if (this.zoomer) {
 		this.zoomer.silentSetPosition(this.frame.topRight().add(

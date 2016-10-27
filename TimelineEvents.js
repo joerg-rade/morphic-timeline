@@ -76,7 +76,7 @@ TimelineEvents.prototype.initScale = function() {
 	while (d < e) {
 		scaleData.push(d);
 		label = d.toDateString().split(" ");
-		scaleLabels.push(label[1] + "\n" + label[2]);
+		scaleLabels.push(label[1] + "\n" + label[2] + "\n" + label[3]);
 		d = new Date(d.getTime() + ONE_DAY_IN_MS);
 	}
 }
